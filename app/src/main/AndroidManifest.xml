@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.photostudio">
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -12,14 +14,32 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PhotoStudio"
         tools:targetApi="31">
+
         <activity
-            android:name=".LandingPage"
+            android:name=".paymentPage"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="com.example.photostudio"
+                    android:path="/payment" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".pre_birthdayPage"
+            android:exported="false" />
+
+        <activity
+            android:name=".bookingPage"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.PhotoStudio">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
