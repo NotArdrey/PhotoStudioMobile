@@ -105,7 +105,7 @@ class paymentPage : AppCompatActivity() {
             val request = Request.Builder()
                 .url("https://api.paymongo.com/v1/links")
                 .post(RequestBody.create("application/json".toMediaType(), requestBody.toString()))
-                .addHeader("Authorization", "Basic ${encodeApiKey("sk_test_RXWak95DFfcXnHg3KVBktkq6")}")
+                .addHeader("Authorization", "Basic ${encodeApiKey("")}") //put api key here to make it work
                 .addHeader("Content-Type", "application/json")
                 .build()
 
