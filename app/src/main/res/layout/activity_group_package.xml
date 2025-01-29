@@ -21,7 +21,7 @@
             android:id="@+id/titleTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/captured_by_k"
+            android:text="Captured By K"
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -34,7 +34,7 @@
             android:id="@+id/subtitleTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/group_package"
+            android:text="Group Package"
             android:textColor="@color/white"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="@id/titleTextView"
@@ -47,7 +47,6 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:src="@drawable/logo"
-            android:contentDescription="@string/logo_description"
             android:background="@drawable/rounded_background"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -79,9 +78,8 @@
                 android:layout_height="300dp"
                 android:background="@drawable/rounded_corner_bg"
                 android:clipToOutline="true"
-                android:contentDescription="@string/solo_package_image_description"
                 android:scaleType="centerCrop"
-                android:src="@drawable/grouppackage" />
+                android:src="@drawable/grouppackageimg" />
 
             <View
                 android:layout_width="match_parent"
@@ -94,7 +92,7 @@
                 android:id="@+id/packageTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/group_package"
+                android:text="Group Package"
                 android:textColor="@color/black"
                 android:textSize="18sp"
                 android:textStyle="bold"
@@ -122,9 +120,8 @@
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:layout_marginStart="8dp"
-                    android:contentDescription="@string/add_icon_description"
-                    android:padding="8dp"
-                    android:src="@drawable/addicon" />
+                    android:padding="3dp"
+                    android:src="@drawable/add" />
             </LinearLayout>
 
             <!-- Divider -->
@@ -139,7 +136,7 @@
                 android:id="@+id/descriptionHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/description"
+                android:text="Description"
                 android:textColor="@color/black"
                 android:textSize="18sp"
                 android:textStyle="bold"
