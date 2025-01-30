@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "224981874599",
+    "project_id": "photostudio-ad49f",
+    "storage_bucket": "photostudio-ad49f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:224981874599:android:914e7f531f03711fc16882",
+        "android_client_info": {
+          "package_name": "com.example.photostudio"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCm4U1DGbOwKJxPbxc6bVkoe2-DQs3ES4k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
