@@ -29,11 +29,10 @@ class paymentPage : AppCompatActivity() {
 
         val paymentButton: Button = findViewById(R.id.downpayment_button)
 
-        // Initialize ViewModel
+
         viewModel = ViewModelProvider(this, PaymentViewModelFactory())
             .get(PaymentViewModel::class.java)
 
-        // Observe redirect URL
         viewModel.redirectUrl.observe(this) { url ->
             if (!url.isNullOrEmpty()) {
                 Log.d("PaymentPage", "Redirecting to: $url")
@@ -44,7 +43,7 @@ class paymentPage : AppCompatActivity() {
             }
         }
 
-        // Observe errors
+
         viewModel.error.observe(this) { errorMessage ->
             if (!errorMessage.isNullOrEmpty()) {
                 Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
@@ -52,14 +51,14 @@ class paymentPage : AppCompatActivity() {
             }
         }
 
-        // Set button click listener
+
         paymentButton.setOnClickListener {
             Log.d("PaymentPage", "Payment button clicked")
             viewModel.createPaymentLink(10000, "Photo Studio Downpayment")
         }
     }
 
-    // ViewModelFactory for creating the ViewModel
+
     class PaymentViewModelFactory : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(PaymentViewModel::class.java)) {
