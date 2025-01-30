@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">PhotoStudio</string>
+    <string name="solo_package_subtitle">A 20-minute session for 1 person, ideal for individual portraits or headshots.</string>
+    <string name="pair_package_subtitle">A 30-minute session for 2 people, perfect for couples or friends. Includes 10 enhanced photos and 1 backdrop.</string>
+    <string name="group_package_subtitle">A 30-minute session for 3-5 people, great for families or small groups. Includes 10 enhanced photos and 1 backdrop.</string>
+    <string name="solo_package_description">₱500 - A 20-minute session for 1 person, ideal for individual portraits or headshots. Includes 5 enhanced photos and 1 backdrop.</string>
+    <string name="pair_package_description">₱700 - A 30-minute session for 2 people, perfect for couples or friends. Includes 10 enhanced photos and 1 backdrop.</string>
+    <string name="email">Email</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="todo">TODO</string>
+    <string name="login">LOGIN</string>
+    <string name="or">or</string>
+    <string name="password">Password</string>
+    <string name="don_t_have_an_account_register_here">Don\'t have an account? Register here</string>
+    <string name="welcome_to_ncaptured_by_k">WELCOME TO\nCAPTURED BY K</string>
+    <string name="group_package_description">₱1000 - A 30-minute session for 3-5 people, great for families or small groups. Includes 10 enhanced photos and 1 backdrop.</string>
 </resources>
