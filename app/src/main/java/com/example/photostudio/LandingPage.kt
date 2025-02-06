@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class LandingPage : AppCompatActivity() {
-//landingpage
+//landing page
     private lateinit var recyclerView: RecyclerView
     private lateinit var imageAdapter: ImageAdapter
     private lateinit var imageItemList: List<ImageItem>
