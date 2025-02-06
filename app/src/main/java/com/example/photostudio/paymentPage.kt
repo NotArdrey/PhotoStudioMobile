@@ -4,8 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
-import android.widget.Toast
+import android.view.View
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -22,13 +22,22 @@ import java.util.*
 class paymentPage : AppCompatActivity() {
 
     private lateinit var viewModel: PaymentViewModel
+    private lateinit var backdropQty: EditText
+    private lateinit var backdropSelectionLayout: LinearLayout
+    private val backdropOptions = arrayOf("Backdrop A", "Backdrop B", "Backdrop C", "Backdrop D", "Backdrop E")
+    private lateinit var extraPersonSection: LinearLayout
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_payment_page)
 
+        extraPersonSection = findViewById(R.id.extraPersonSection)
+        extraPersonSection.visibility = View.GONE
         val paymentButton: Button = findViewById(R.id.downpayment_button)
-
+        backdropQty = findViewById(R.id.backdropQty)
+        backdropSelectionLayout = findViewById(R.id.backdropSelectionLayout)
 
         viewModel = ViewModelProvider(this, PaymentViewModelFactory())
             .get(PaymentViewModel::class.java)
@@ -43,7 +52,6 @@ class paymentPage : AppCompatActivity() {
             }
         }
 
-
         viewModel.error.observe(this) { errorMessage ->
             if (!errorMessage.isNullOrEmpty()) {
                 Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
@@ -51,13 +59,50 @@ class paymentPage : AppCompatActivity() {
             }
         }
 
-
         paymentButton.setOnClickListener {
             Log.d("PaymentPage", "Payment button clicked")
             viewModel.createPaymentLink(10000, "Photo Studio Downpayment")
         }
+
+        // Monitor changes in the backdrop quantity field
+        backdropQty.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) { // Only update when user leaves the field
+                updateBackdropSelection()
+            }
+        }
     }
 
+
+    private fun updateBackdropSelection() {
+        val qtyStr = backdropQty.text.toString()
+        if (qtyStr.isEmpty() || qtyStr.toInt() == 0) {
+            backdropSelectionLayout.visibility = View.GONE
+            backdropSelectionLayout.removeAllViews()
+            return
+        }
+
+        val quantity = qtyStr.toInt()
+        backdropSelectionLayout.removeAllViews() // Clear previous dropdowns
+
+        for (i in 1..quantity) {
+            val backdropSpinner = Spinner(this)
+            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, backdropOptions)
+            backdropSpinner.adapter = adapter
+
+            // Add spacing between spinners
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(0, 10, 0, 10)
+            backdropSpinner.layoutParams = params
+
+            backdropSelectionLayout.addView(backdropSpinner)
+        }
+
+        // Show selection layout
+        backdropSelectionLayout.visibility = View.VISIBLE
+    }
 
     class PaymentViewModelFactory : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -68,7 +113,6 @@ class paymentPage : AppCompatActivity() {
         }
     }
 
-    // ViewModel for handling API logic
     class PaymentViewModel : ViewModel() {
 
         private val _redirectUrl = MutableLiveData<String?>()
@@ -79,11 +123,6 @@ class paymentPage : AppCompatActivity() {
 
         private val apiClient = createApiClient()
 
-        /**
-         * Creates a payment link using PayMongo Links API.
-         * @param amount Amount in cents (e.g., PHP 100.00 = 10000).
-         * @param description Description of the payment link.
-         */
         fun createPaymentLink(amount: Int, description: String) {
             val requestBody = JSONObject().apply {
                 put("data", JSONObject().apply {
@@ -104,7 +143,7 @@ class paymentPage : AppCompatActivity() {
             val request = Request.Builder()
                 .url("https://api.paymongo.com/v1/links")
                 .post(RequestBody.create("application/json".toMediaType(), requestBody.toString()))
-                .addHeader("Authorization", "Basic ${encodeApiKey("")}") //put api key here to make it work
+                .addHeader("Authorization", "Basic ${encodeApiKey("")}") // Insert API key here
                 .addHeader("Content-Type", "application/json")
                 .build()
 

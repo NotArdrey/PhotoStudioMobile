@@ -116,7 +116,7 @@
                 android:id="@+id/aboutUsDescription"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Captured by K is a self-photography studio in Albay, Philippines, offering a space to capture your most authentic self. With professional lighting and an easy-to-use setup, we make your self-portrait experience fun, personal, and memorable."
+                android:text="Captured by K is a photography studio in Albay, Philippines, offering a space to capture your most authentic self. With professional lighting and an easy-to-use setup, we make your self-portrait experience fun, personal, and memorable."
                 android:textSize="14sp"
                 android:layout_marginTop="8dp"
                 android:textColor="#777777" />
@@ -150,17 +150,19 @@
         </LinearLayout>
     </ScrollView>
 
+
+
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="0dp"
         android:layout_height="72dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         android:background="#333333"
         app:itemIconTint="@color/bottom_nav_content_color"
         app:itemTextColor="@color/bottom_nav_content_color"
         app:menu="@menu/bottom_nav_menu"
-        style="@style/BottomNavStyle"
-        android:elevation="8dp" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+
