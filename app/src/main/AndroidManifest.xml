@@ -15,47 +15,60 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PhotoStudio"
         tools:targetApi="31">
-        <activity
-            android:name=".LandingPage"
-            android:exported="false" />
-        <activity
-            android:name=".pair_packagePage"
-            android:exported="false" />
-        <activity
-            android:name=".SoloPackagePage"
-            android:exported="false" />
-        <activity
-            android:name=".GroupPackage"
-            android:exported="false" />
-        <activity
-            android:name=".paymentPage"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
 
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
+    <!-- List of activities -->
+    <activity
+        android:name=".LandingPage"
+        android:exported="true" />
 
-                <data
-                    android:host="com.example.photostudio"
-                    android:path="/payment"
-                    android:scheme="https" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".pre_birthdayPage"
-            android:exported="false" />
-        <activity
-            android:name=".bookingPage"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.PhotoStudio">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+    <activity
+        android:name=".pair_packagePage"
+        android:exported="true" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
+    <activity
+        android:name=".SoloPackagePage"
+        android:exported="true" />
 
+    <activity
+        android:name=".GroupPackage"
+        android:exported="true" />
+
+    <activity
+        android:name=".RegisterActivity"
+        android:exported="true" />
+
+    <activity
+        android:name=".LoginActivity"
+        android:exported="true" />
+
+    <activity
+        android:name=".PaymentPage"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data
+                android:host="com.example.photostudio"
+                android:path="/payment"
+                android:scheme="https" />
+        </intent-filter>
+    </activity>
+
+    <activity
+        android:name=".pre_birthdayPage"
+        android:exported="false" />
+
+    <activity
+        android:name=".bookingPage"
+        android:exported="true"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.PhotoStudio">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
+
+</application>
 </manifest>
