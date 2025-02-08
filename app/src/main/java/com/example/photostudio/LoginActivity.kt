@@ -70,6 +70,7 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
+
     private fun handleUserLogin() {
         val userName = userNameInput.text.toString().trim()
         val password = passwordInput.text.toString().trim()
@@ -84,6 +85,7 @@ class LoginActivity : AppCompatActivity() {
                 return
             }
         }
+
 
         showLoading(true)
 
@@ -100,6 +102,7 @@ class LoginActivity : AppCompatActivity() {
                             return@addOnSuccessListener
                         }
                     }
+
                     showError("Invalid username or password.")
                 } else {
                     showError("User does not exist.")

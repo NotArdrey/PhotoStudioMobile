@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="Defaltbackdrop_options">
+        <item>Red</item>
+        <item>Yellow</item>
+        <item>Peach</item>
+        <item>Brown</item>
+        <item>Gray</item>
+        <item>White</item>
+        <item>Black - Red Abstract</item>
+        <item>Black Mosaic</item>
+        <item>Blue Abstract</item>
+        <item>Graduation Blue</item>
+        <item>Graduation Black</item>
+        <item>Sakura</item>
+    </string-array>
+</resources>

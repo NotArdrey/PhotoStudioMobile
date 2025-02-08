@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    tools:context=".pre_birthdayPage">
+    tools:context="com.example.photostudio.PreBirthdayPage">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -15,13 +15,10 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-
-            <!-- Header Section -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/headerLayout"
                 android:layout_width="match_parent"
@@ -31,7 +28,6 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
-
 
                 <TextView
                     android:id="@+id/titleTextView"
@@ -46,8 +42,6 @@
                     app:layout_constraintEnd_toStartOf="@+id/logoImageView"
                     app:layout_constraintHorizontal_bias="0" />
 
-
-
                 <TextView
                     android:id="@+id/subtitleTextView"
                     android:layout_width="0dp"
@@ -59,8 +53,6 @@
                     app:layout_constraintTop_toBottomOf="@id/titleTextView"
                     app:layout_constraintEnd_toStartOf="@+id/logoImageView"
                     app:layout_constraintHorizontal_bias="0" />
-
-
 
                 <ImageView
                     android:id="@+id/logoImageView"
@@ -74,9 +66,6 @@
                     app:layout_constraintBottom_toBottomOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-
-
-            <!-- Horizontal Scroll Section -->
             <HorizontalScrollView
                 android:background="#EFEFEF"
                 android:id="@+id/horizontalScrollView"
@@ -170,7 +159,6 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
-
             <View
                 android:id="@+id/dividerView"
                 android:layout_width="match_parent"
@@ -181,8 +169,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-
-            <!-- 1-2 Years Old Package -->
             <LinearLayout
                 android:id="@+id/OneYearsOldPackageLayout"
                 android:layout_width="match_parent"
@@ -194,7 +180,6 @@
                 app:layout_constraintTop_toBottomOf="@id/dividerView"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
-
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -240,8 +225,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-
-            <!-- 3-4 Years Old Package -->
             <LinearLayout
                 android:id="@+id/threeYearsOldPackageLayout"
                 android:layout_width="match_parent"
@@ -253,7 +236,6 @@
                 app:layout_constraintTop_toBottomOf="@id/dividerView2"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
-
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -299,8 +281,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-
-            <!-- 5-9 Years Old Package -->
             <LinearLayout
                 android:id="@+id/fiveYearsOldPackageLayout"
                 android:layout_width="match_parent"
@@ -312,7 +292,6 @@
                 app:layout_constraintTop_toBottomOf="@id/dividerView3"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
-
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -352,12 +331,6 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
-
-
-
-
-
-    <!-- Bottom Nav Bar -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="0dp"
