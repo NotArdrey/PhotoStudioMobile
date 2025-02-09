@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.photostudio" />
+                  <option name="mobileSdkAppId" value="1:224981874599:android:914e7f531f03711fc16882" />
+                  <option name="projectId" value="photostudio-ad49f" />
+                  <option name="projectNumber" value="224981874599" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
