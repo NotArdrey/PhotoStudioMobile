@@ -14,7 +14,6 @@ class pair_packagePage : AppCompatActivity() {
 
     private lateinit var addIcon: ImageView
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -24,6 +23,7 @@ class pair_packagePage : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
         val defaultPax = 2
         val description = "Pair Package"
         val packagePrice = 700

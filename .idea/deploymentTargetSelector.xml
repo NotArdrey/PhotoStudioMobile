@@ -24,9 +24,6 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="paymentPage">
-        <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
       <SelectionState runConfigName="bookingPage">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>

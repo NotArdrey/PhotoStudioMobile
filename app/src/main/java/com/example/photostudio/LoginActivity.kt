@@ -70,7 +70,6 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-
     private fun handleUserLogin() {
         val userName = userNameInput.text.toString().trim()
         val password = passwordInput.text.toString().trim()
@@ -85,7 +84,6 @@ class LoginActivity : AppCompatActivity() {
                 return
             }
         }
-
 
         showLoading(true)
 
@@ -102,7 +100,6 @@ class LoginActivity : AppCompatActivity() {
                             return@addOnSuccessListener
                         }
                     }
-
                     showError("Invalid username or password.")
                 } else {
                     showError("User does not exist.")
@@ -131,12 +128,16 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun saveUserToLocalStorage(user: User) {
+        // Save user data in SharedPreferences
         sharedPreferences.edit().apply {
             putString("uid", user.uid)
             putString("userName", user.userName)
             putBoolean("isEmailVerified", user.isEmailVerified)
             apply()
         }
+        // Now the current user id is stored in SharedPreferences under key "uid".
+        // You can retrieve it in other parts of your app like so:
+        // val currentUserId = sharedPreferences.getString("uid", null)
     }
 
     private fun showLoading(show: Boolean) {
