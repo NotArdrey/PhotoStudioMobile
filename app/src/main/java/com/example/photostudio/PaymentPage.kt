@@ -4,27 +4,17 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.EditText
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.*
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
-import okhttp3.Call
-import okhttp3.Callback
+import com.google.firebase.database.FirebaseDatabase
+import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import org.json.JSONArray
 import org.json.JSONObject
@@ -38,12 +28,11 @@ class PaymentPage : AppCompatActivity() {
     private lateinit var dynamicBackdropCard: CardView
     private lateinit var backdropChipGroup: ChipGroup
     private val backdropOptions = arrayOf("Red", "Yellow", "Peach", "Brown", "Backdrop E")
-    private lateinit var extraPersonSection: android.widget.LinearLayout
+    private lateinit var extraPersonSection: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_payment_page)
-
 
         val defaultPax = intent.getIntExtra("defaultPax", 3)
         val description = intent.getStringExtra("description")
@@ -56,22 +45,158 @@ class PaymentPage : AppCompatActivity() {
         backdropChipGroup = findViewById(R.id.backdropChipGroup)
         dynamicBackdropCard.visibility = android.view.View.GONE
 
+        // Get references for the additional fields.
+        val extraPersonQtyInput = findViewById<EditText>(R.id.extraPersonQty)
+        val softCopyQtyInput = findViewById<EditText>(R.id.softCopyQty)
+        val calendarView = findViewById<CalendarView>(R.id.calendarView)
+        val timePicker = findViewById<TimePicker>(R.id.timePicker)
+        val defaultBackdropAutoComplete = findViewById<MaterialAutoCompleteTextView>(R.id.defaultBackdropSpinner)
+
         val paymentButton: Button = findViewById(R.id.downpayment_button)
+        val fullPaymentButton: Button = findViewById(R.id.full_payment_button)
 
         paymentButton.setOnClickListener {
 
             val extraPersonAmount = defaultPax * 200
-
             val backdropAmount = (backdropQty.text.toString().toIntOrNull() ?: 0) * 200
-
-
             val packagePriceInt = packagePriceStr?.toIntOrNull() ?: 0
 
             // Calculate the total amount.
             val totalAmount = extraPersonAmount + backdropAmount + packagePriceInt
-
-            // Use totalAmount as needed...
             Log.d("PaymentPage", "Total amount calculated: $totalAmount")
+
+            // ----- COLLECT ADDITIONAL FIELDS -----
+            // Extra Person Qty
+            val extraPersonQtyValue = extraPersonQtyInput.text.toString().toIntOrNull() ?: 0
+            // Soft Copy Quantity
+            val softCopyQtyValue = softCopyQtyInput.text.toString().toIntOrNull() ?: 0
+            // Default Backdrop Selection
+            val defaultBackdropValue = defaultBackdropAutoComplete.text.toString()
+            // Selected Extra Backdrop Options from ChipGroup
+            val selectedExtraBackdropOptions = mutableListOf<String>()
+            for (i in 0 until backdropChipGroup.childCount) {
+                val chip = backdropChipGroup.getChildAt(i) as Chip
+                if (chip.text.toString() != "Select Backdrop") {
+                    selectedExtraBackdropOptions.add(chip.text.toString())
+                }
+            }
+            val selectedExtraBackdrop = if (selectedExtraBackdropOptions.isNotEmpty())
+                selectedExtraBackdropOptions.joinToString(", ") else ""
+            // Appointment Date from CalendarView (timestamp in ms)
+            val appointmentDate = calendarView.date
+            // Appointment Time from TimePicker
+            val appointmentHour = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+                timePicker.hour else timePicker.currentHour
+            val appointmentMinute = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+                timePicker.minute else timePicker.currentMinute
+            val appointmentTime = "$appointmentHour:$appointmentMinute"
+            // -------------------------------------
+
+            // ---------------------------
+            // Save user payment info to Realtime Database
+            // ---------------------------
+            val sharedPreferences = getSharedPreferences("user_prefs", MODE_PRIVATE)
+            val uid = sharedPreferences.getString("uid", null)
+            if (uid != null) {
+                val paymentType = "Downpayment"
+                val paymentData = hashMapOf(
+                    "uid" to uid,
+                    "totalAmount" to totalAmount,
+                    "description" to "Captured By K Package: $description",
+                    "paymentType" to paymentType,
+                    // Additional fields
+                    "extraPersonQty" to extraPersonQtyValue,
+                    "softCopyQty" to softCopyQtyValue,
+                    "defaultBackdrop" to defaultBackdropValue,
+                    "selectedExtraBackdrop" to selectedExtraBackdrop,
+                    "appointmentDate" to appointmentDate,
+                    "appointmentTime" to appointmentTime
+                )
+                val databaseReference = FirebaseDatabase.getInstance().reference
+                databaseReference.child("payments").push().setValue(paymentData)
+                    .addOnSuccessListener {
+                        Log.d("PaymentPage", "Payment data saved successfully in Realtime Database.")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("PaymentPage", "Error saving payment data to Realtime Database", e)
+                    }
+            } else {
+                Log.e("PaymentPage", "User UID not found in SharedPreferences")
+            }
+            // ---------------------------
+            viewModel.createPaymentLink(totalAmount, "Captured By K Package: $description")
+        }
+
+        fullPaymentButton.setOnClickListener {
+            val extraPersonAmount = defaultPax * 200
+            val backdropAmount = (backdropQty.text.toString().toIntOrNull() ?: 0) * 200
+            val packagePriceInt = packagePriceStr?.toIntOrNull() ?: 0
+
+            // Calculate the total amount.
+            val totalAmount = extraPersonAmount + backdropAmount + packagePriceInt
+            Log.d("PaymentPage", "Total amount calculated for full payment: $totalAmount")
+
+            // ----- COLLECT ADDITIONAL FIELDS -----
+            // Extra Person Qty
+            val extraPersonQtyValue = extraPersonQtyInput.text.toString().toIntOrNull() ?: 0
+            // Soft Copy Quantity
+            val softCopyQtyValue = softCopyQtyInput.text.toString().toIntOrNull() ?: 0
+            // Default Backdrop Selection
+            val defaultBackdropValue = defaultBackdropAutoComplete.text.toString()
+            // Selected Extra Backdrop Options from ChipGroup
+            val selectedExtraBackdropOptions = mutableListOf<String>()
+            for (i in 0 until backdropChipGroup.childCount) {
+                val chip = backdropChipGroup.getChildAt(i) as Chip
+                if (chip.text.toString() != "Select Backdrop") {
+                    selectedExtraBackdropOptions.add(chip.text.toString())
+                }
+            }
+            val selectedExtraBackdrop = if (selectedExtraBackdropOptions.isNotEmpty())
+                selectedExtraBackdropOptions.joinToString(", ") else ""
+            // Appointment Date from CalendarView
+            val appointmentDate = calendarView.date
+            // Appointment Time from TimePicker
+            val appointmentHour = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+                timePicker.hour else timePicker.currentHour
+            val appointmentMinute = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+                timePicker.minute else timePicker.currentMinute
+            val appointmentTime = "$appointmentHour:$appointmentMinute"
+            // -------------------------------------
+
+            // ---------------------------
+            // Save full payment info to Realtime Database
+            // ---------------------------
+            val sharedPreferences = getSharedPreferences("user_prefs", MODE_PRIVATE)
+            val uid = sharedPreferences.getString("uid", null)
+            if (uid != null) {
+                val paymentType = "Full Payment"
+                val paymentData = hashMapOf(
+                    "uid" to uid,
+                    "totalAmount" to totalAmount,
+                    "description" to "Captured By K Package: $description",
+                    "paymentType" to paymentType,
+                    // Additional fields
+                    "extraPersonQty" to extraPersonQtyValue,
+                    "softCopyQty" to softCopyQtyValue,
+                    "defaultBackdrop" to defaultBackdropValue,
+                    "selectedExtraBackdrop" to selectedExtraBackdrop,
+                    "appointmentDate" to appointmentDate,
+                    "appointmentTime" to appointmentTime
+                )
+
+
+                val databaseReference = FirebaseDatabase.getInstance().reference
+                databaseReference.child("payments").push().setValue(paymentData)
+                    .addOnSuccessListener {
+                        Log.d("PaymentPage", "Full payment data saved successfully in Realtime Database.")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("PaymentPage", "Error saving full payment data to Realtime Database", e)
+                    }
+            } else {
+                Log.e("PaymentPage", "User UID not found in SharedPreferences for full payment")
+            }
+            // ---------------------------
             viewModel.createPaymentLink(totalAmount, "Captured By K Package: $description")
         }
 
@@ -105,7 +230,6 @@ class PaymentPage : AppCompatActivity() {
         }
 
         // Configure the default backdrop dropdown.
-        val defaultBackdropAutoComplete = findViewById<MaterialAutoCompleteTextView>(R.id.defaultBackdropSpinner)
         val options = resources.getStringArray(R.array.Defaltbackdrop_options)
         val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, options)
         defaultBackdropAutoComplete.setAdapter(adapter)
@@ -117,11 +241,6 @@ class PaymentPage : AppCompatActivity() {
         }
     }
 
-    /**
-     * Updates the extra backdrop selection dynamically based on the quantity entered.
-     * This implementation uses a ChipGroup inside a CardView to display available backdrop options.
-     * Each Chip, when clicked, will show a dialog to let the user select a backdrop from backdropOptions.
-     */
     private fun updateBackdropSelection() {
         val qtyStr = backdropQty.text.toString()
         if (qtyStr.isEmpty() || qtyStr.toInt() == 0) {
@@ -167,7 +286,7 @@ class PaymentPage : AppCompatActivity() {
         }
     }
 
-    // PaymentViewModel that handles the API call.
+    // Handles the API call.
     class PaymentViewModel : ViewModel() {
 
         private val _redirectUrl = MutableLiveData<String?>()
