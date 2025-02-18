@@ -7,11 +7,18 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 
 class pre_birthdayPage : AppCompatActivity() {
+    private lateinit var backButton: ImageView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_pre_birthday_page)
 
+        backButton.setOnClickListener {
+            val intent = Intent(this, bookingPage::class.java)
+            startActivity(intent)
+            finish()
+        }
 
         val plusFirst: ImageView = findViewById(R.id.plusFirst)
         plusFirst.setOnClickListener {

@@ -22,15 +22,16 @@ class AccountPage : AppCompatActivity() {
 
         val currentUser = auth.currentUser
         val editAccount = findViewById<TextView>(R.id.editAccount)
-
         val userEmail = currentUser?.email ?: ""
-        findViewById<TextView>(R.id.subtitleTextView).text = "Welcome ${currentUser?.displayName ?: "User"}"
+
+        findViewById<TextView>(R.id.subtitleTextView).text =
+            "Welcome ${currentUser?.displayName ?: "User"}"
 
         editAccount.setOnClickListener {
             if (userEmail.isNotEmpty()) {
                 sendOtp(userEmail)
             } else {
-                Toast.makeText(this, "No email associated with this account", Toast.LENGTH_SHORT).show()
+                showToast("No email associated with this account")
             }
         }
     }
@@ -41,18 +42,31 @@ class AccountPage : AppCompatActivity() {
         functions.getHttpsCallable("sendOTP")
             .call(data)
             .addOnSuccessListener { result ->
-                val otp = (result.data as? HashMap<*, *>)?.get("otp")?.toString()
-                if (otp != null) {
-                    Toast.makeText(this, "OTP sent to $email", Toast.LENGTH_SHORT).show()
-                    val intent = Intent(this, CodeVerificationPage::class.java)
-                    intent.putExtra("otp", otp)
-                    startActivity(intent)
+                // Use getData() to retrieve data safely
+                val resultData = result.getData() as? Map<*, *>
+                val otp = resultData?.get("otp")?.toString()
+
+                if (!otp.isNullOrEmpty()) {
+                    showToast("OTP sent to $email")
+                    navigateToCodeVerification(email, otp)
                 } else {
-                    Toast.makeText(this, "Failed to retrieve OTP", Toast.LENGTH_SHORT).show()
+                    showToast("Failed to retrieve OTP")
                 }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to send OTP: ${e.message}", Toast.LENGTH_SHORT).show()
+                showToast("Failed to send OTP: ${e.message}")
             }
+    }
+
+
+    private fun navigateToCodeVerification(email: String, otp: String) {
+        val intent = Intent(this, CodeVerificationPage::class.java)
+        intent.putExtra("email", email)
+        intent.putExtra("otp", otp)
+        startActivity(intent)
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }

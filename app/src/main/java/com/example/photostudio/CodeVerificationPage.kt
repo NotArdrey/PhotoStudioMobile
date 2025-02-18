@@ -34,13 +34,10 @@ class CodeVerificationPage : AppCompatActivity() {
             val enteredOtp = codeInput.text.toString().trim()
 
             if (enteredOtp == receivedOtp) {
-                Toast.makeText(this, "OTP Verified!", Toast.LENGTH_SHORT).show()
-                // Proceed to the next step, e.g., open EditAccountPage
-                val intent = Intent(this, EditAccountPage::class.java)
-                startActivity(intent)
-                finish()
+                showToast("OTP Verified!")
+                navigateToEditAccount()
             } else {
-                Toast.makeText(this, "Invalid OTP!", Toast.LENGTH_SHORT).show()
+                showToast("Invalid OTP!")
             }
         }
 
@@ -61,11 +58,30 @@ class CodeVerificationPage : AppCompatActivity() {
         functions.getHttpsCallable("sendOTP")
             .call(data)
             .addOnSuccessListener { result ->
-                receivedOtp = (result.data as HashMap<*, *>)?["otp"].toString()
-                Toast.makeText(this, "New OTP sent to $userEmail", Toast.LENGTH_SHORT).show()
+                // Use getData() to retrieve data safely
+                val resultData = result.getData() as? Map<*, *>
+                val otp = resultData?.get("otp")?.toString()
+
+                if (!otp.isNullOrEmpty()) {
+                    receivedOtp = otp
+                    showToast("New OTP sent to $userEmail")
+                } else {
+                    showToast("Failed to retrieve new OTP")
+                }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "Failed to resend OTP: ${e.message}", Toast.LENGTH_SHORT).show()
+                showToast("Failed to resend OTP: ${e.message}")
             }
+    }
+
+
+    private fun navigateToEditAccount() {
+        val intent = Intent(this, EditAccountPage::class.java)
+        startActivity(intent)
+        finish()
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }
