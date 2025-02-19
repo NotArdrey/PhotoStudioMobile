@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.database.*
+import java.security.MessageDigest
 import java.util.Date
 
 class LoginActivity : AppCompatActivity() {
@@ -21,10 +22,12 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var database: DatabaseReference
 
+    // Use the same unified User data model here
     data class User(
         val uid: String = "",
         val userName: String = "",
-        val password: String = "",
+        val email: String = "",
+        val hashedPassword: String = "",
         val lastLoginTimestamp: Long = Date().time,
         val signInProvider: String = "",
         val isEmailVerified: Boolean = false,
@@ -54,7 +57,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun initializeFirebase() {
-        database = FirebaseDatabase.getInstance().reference.child("users")
+        database = FirebaseDatabase.getInstance().reference.child("Users")
     }
 
     private fun setupClickListeners() {
@@ -69,7 +72,6 @@ class LoginActivity : AppCompatActivity() {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
     }
-
 
     private fun handleUserLogin() {
         val userName = userNameInput.text.toString().trim()
@@ -86,15 +88,17 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-
         showLoading(true)
+        val hashedPassword = hashPassword(password)
 
+        // Query Firebase for the user with the matching userName
         database.orderByChild("userName").equalTo(userName).get()
             .addOnSuccessListener { snapshot ->
                 if (snapshot.exists()) {
                     for (childSnapshot in snapshot.children) {
                         val user = childSnapshot.getValue(User::class.java)
-                        if (user != null && user.password == password) {
+                        // Validate that the hashed input matches the stored hashed password
+                        if (user != null && user.hashedPassword == hashedPassword) {
                             saveUserToLocalStorage(user)
                             showToast("Login successful!")
                             startActivity(Intent(this, LandingPage::class.java))
@@ -102,7 +106,6 @@ class LoginActivity : AppCompatActivity() {
                             return@addOnSuccessListener
                         }
                     }
-
                     showError("Invalid username or password.")
                 } else {
                     showError("User does not exist.")
@@ -115,19 +118,10 @@ class LoginActivity : AppCompatActivity() {
             }
     }
 
-    private fun saveUserToDatabase(user: User) {
-        val userId = database.push().key ?: return
-        val newUser = user.copy(uid = userId)
-        database.child(userId).setValue(newUser)
-            .addOnSuccessListener {
-                showToast("User saved successfully")
-                saveUserToLocalStorage(newUser)
-                startActivity(Intent(this, LandingPage::class.java))
-                finish()
-            }
-            .addOnFailureListener { e ->
-                showError("Failed to save user: ${e.message}")
-            }
+    private fun hashPassword(password: String): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(password.toByteArray(Charsets.UTF_8))
+        return digest.joinToString("") { "%02x".format(it) }
     }
 
     private fun saveUserToLocalStorage(user: User) {

@@ -5,9 +5,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    tools:context="com.example.photostudio.PreBirthdayPage">
+    tools:context="com.example.photostudio.BirthdayPage">
 
     <ScrollView
+        android:id="@+id/mainScrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
@@ -19,6 +20,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
+            <!-- Header Section -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/headerLayout"
                 android:layout_width="match_parent"
@@ -65,28 +67,28 @@
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
-            <!-- Image Section -->
+
+            <!-- Back Arrow placed below the header -->
             <ImageView
                 android:id="@+id/backButton"
                 android:layout_width="26dp"
                 android:layout_height="26dp"
                 android:src="@drawable/back_arrow"
-                android:layout_marginEnd="16dp"
-                android:layout_marginBottom="20dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@id/horizontalScrollView"
-                app:layout_constraintBottom_toBottomOf="@id/logoImageView"
+                android:layout_margin="16dp"
                 android:clickable="true"
-                android:focusable="true"/>
+                android:focusable="true"
+                app:layout_constraintTop_toBottomOf="@id/headerLayout"
+                app:layout_constraintStart_toStartOf="parent" />
 
+            <!-- Horizontal ScrollView with Cards placed below the arrow -->
             <HorizontalScrollView
-                android:background="#EFEFEF"
                 android:id="@+id/horizontalScrollView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="8dp"
+                android:background="#EFEFEF"
                 android:scrollbars="none"
-                app:layout_constraintTop_toBottomOf="@id/headerLayout"
+                app:layout_constraintTop_toBottomOf="@id/backButton"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
@@ -172,6 +174,7 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
+            <!-- Divider -->
             <View
                 android:id="@+id/dividerView"
                 android:layout_width="match_parent"
@@ -182,6 +185,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
+            <!-- Package Layouts -->
             <LinearLayout
                 android:id="@+id/OneYearsOldPackageLayout"
                 android:layout_width="match_parent"
@@ -234,7 +238,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/black"
-                app:layout_constraintTop_toBottomOf="@+id/OneYearsOldPackageLayout"
+                app:layout_constraintTop_toBottomOf="@id/OneYearsOldPackageLayout"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -290,7 +294,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/black"
-                app:layout_constraintTop_toBottomOf="@+id/threeYearsOldPackageLayout"
+                app:layout_constraintTop_toBottomOf="@id/threeYearsOldPackageLayout"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 

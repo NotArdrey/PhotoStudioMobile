@@ -36,6 +36,7 @@
         <activity
             android:name=".GroupPackage"
             android:exported="true" />
+
         <activity
             android:name=".RegisterActivity"
             android:exported="true" />
@@ -58,8 +59,8 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".pre_birthdayPage"
-            android:exported="false" />
+            android:name=".BirthdayPage"
+            android:exported="true" />
         <activity
             android:name=".bookingPage"
             android:exported="true"

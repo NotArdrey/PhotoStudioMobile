@@ -6,19 +6,12 @@ import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 
-class pre_birthdayPage : AppCompatActivity() {
-    private lateinit var backButton: ImageView
+class BirthdayPage : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_pre_birthday_page)
-
-        backButton.setOnClickListener {
-            val intent = Intent(this, bookingPage::class.java)
-            startActivity(intent)
-            finish()
-        }
 
         val plusFirst: ImageView = findViewById(R.id.plusFirst)
         plusFirst.setOnClickListener {
@@ -34,7 +27,6 @@ class pre_birthdayPage : AppCompatActivity() {
             startActivity(paymentIntent)
         }
 
-
         val plusSecond: ImageView = findViewById(R.id.plusSecond)
         plusSecond.setOnClickListener {
             val defaultPax = 1
@@ -49,7 +41,6 @@ class pre_birthdayPage : AppCompatActivity() {
             startActivity(paymentIntent)
         }
 
-
         val plusThird: ImageView = findViewById(R.id.plusThird)
         plusThird.setOnClickListener {
             val defaultPax = 1
@@ -62,6 +53,11 @@ class pre_birthdayPage : AppCompatActivity() {
                 putExtra("packagePrice", packagePrice)
             }
             startActivity(paymentIntent)
+        }
+
+        findViewById<ImageView>(R.id.backButton).setOnClickListener {
+            val intent = Intent(this, bookingPage::class.java)
+            startActivity(intent)
         }
     }
 }

@@ -24,7 +24,6 @@ class bookingPage : AppCompatActivity() {
                     true
                 }
                 R.id.nav_profile -> {
-
                     true
                 }
                 else -> false
@@ -48,7 +47,7 @@ class bookingPage : AppCompatActivity() {
         }
 
         findViewById<ImageView>(R.id.BirthdayArrow).setOnClickListener {
-            val intent = Intent(this, pre_birthdayPage::class.java)
+            val intent = Intent(this, BirthdayPage::class.java)
             startActivity(intent)
         }
     }

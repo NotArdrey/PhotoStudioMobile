@@ -2,6 +2,7 @@ package com.example.photostudio
 
 import ImageAdapter
 import ImageItem
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -42,15 +43,16 @@ class LandingPage : AppCompatActivity() {
         bottomNavigationView.setOnNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_home -> {
-                    // Handle home navigation
                     true
                 }
                 R.id.nav_cart -> {
-                    // Handle cart navigation
+                    startActivity(Intent(this, bookingPage::class.java))
+                    finish()
                     true
                 }
                 R.id.nav_profile -> {
-                    // Handle profile navigation
+                    startActivity(Intent(this, AccountPage::class.java))
+                    finish()
                     true
                 }
                 else -> false
