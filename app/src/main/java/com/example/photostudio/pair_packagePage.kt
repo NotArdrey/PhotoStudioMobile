@@ -13,6 +13,7 @@ import androidx.core.view.WindowInsetsCompat
 class pair_packagePage : AppCompatActivity() {
 
     private lateinit var addIcon: ImageView
+    private lateinit var backButton: ImageView
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,6 +25,15 @@ class pair_packagePage : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        backButton = findViewById(R.id.backButton)
+
+
+        backButton.setOnClickListener {
+            val intent = Intent(this, bookingPage::class.java)
+            startActivity(intent)
+            finish()
+        }
+
         val defaultPax = 2
         val description = "Pair Package"
         val packagePrice = 700
