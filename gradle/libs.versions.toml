@@ -19,6 +19,7 @@ playServicesAuth = "21.3.0"
 firebaseAuthCommon = "9.8.0"
 firebaseAuthKtx = "23.1.0"
 firebaseFunctionsKtx = "21.1.0"
+firebaseFirestoreKtx = "25.1.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -45,6 +46,7 @@ play-services-auth = { group = "com.google.android.gms", name = "play-services-a
 firebase-auth-common = { group = "com.google.firebase", name = "firebase-auth-common", version.ref = "firebaseAuthCommon" }
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx", version.ref = "firebaseAuthKtx" }
 firebase-functions-ktx = { group = "com.google.firebase", name = "firebase-functions-ktx", version.ref = "firebaseFunctionsKtx" }
+firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
