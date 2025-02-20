@@ -2,13 +2,14 @@ package com.example.photostudio
 
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.database.*
+import com.google.firebase.firestore.FirebaseFirestore
 import java.security.MessageDigest
 import java.util.Date
 
@@ -20,9 +21,8 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var registerLink: TextView
 
     private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var database: DatabaseReference
+    private lateinit var firestore: FirebaseFirestore
 
-    // Use the same unified User data model here
     data class User(
         val uid: String = "",
         val userName: String = "",
@@ -30,7 +30,7 @@ class LoginActivity : AppCompatActivity() {
         val hashedPassword: String = "",
         val lastLoginTimestamp: Long = Date().time,
         val signInProvider: String = "",
-        val isEmailVerified: Boolean = false,
+        val emailVerified: Boolean = false,  // Updated field name
         val createdAt: Long = Date().time,
         val index: Int = 0
     )
@@ -44,7 +44,11 @@ class LoginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
 
         initializeViews()
-        initializeFirebase()
+        initializeFirestore()
+
+        // Check if the activity was launched from a deep link (e.g., after email verification)
+        handleDeepLink(intent?.data)
+
         setupClickListeners()
     }
 
@@ -56,8 +60,8 @@ class LoginActivity : AppCompatActivity() {
         sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE)
     }
 
-    private fun initializeFirebase() {
-        database = FirebaseDatabase.getInstance().reference.child("Users")
+    private fun initializeFirestore() {
+        firestore = FirebaseFirestore.getInstance()
     }
 
     private fun setupClickListeners() {
@@ -71,6 +75,28 @@ class LoginActivity : AppCompatActivity() {
         registerLink.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
+    }
+
+    private fun handleDeepLink(data: Uri?) {
+        data?.let { uri ->
+            // Expecting a link like: https://www.yourapp.com/verify?uid=USER_ID
+            val uid = uri.getQueryParameter("uid")
+            if (uid != null) {
+                verifyEmail(uid)
+            }
+        }
+    }
+
+    private fun verifyEmail(uid: String) {
+        firestore.collection("Users")
+            .document(uid)
+            .update("emailVerified", true)  // Updated field name
+            .addOnSuccessListener {
+                showToast("Email verified successfully!")
+            }
+            .addOnFailureListener { e ->
+                showError("Email verification failed: ${e.message}")
+            }
     }
 
     private fun handleUserLogin() {
@@ -91,14 +117,20 @@ class LoginActivity : AppCompatActivity() {
         showLoading(true)
         val hashedPassword = hashPassword(password)
 
-        // Query Firebase for the user with the matching userName
-        database.orderByChild("userName").equalTo(userName).get()
+        firestore.collection("Users")
+            .whereEqualTo("userName", userName)
+            .get()
             .addOnSuccessListener { snapshot ->
-                if (snapshot.exists()) {
-                    for (childSnapshot in snapshot.children) {
-                        val user = childSnapshot.getValue(User::class.java)
-                        // Validate that the hashed input matches the stored hashed password
+                if (!snapshot.isEmpty) {
+                    for (doc in snapshot.documents) {
+                        val user = doc.toObject(User::class.java)
                         if (user != null && user.hashedPassword == hashedPassword) {
+                            // Check if the user's email is verified before proceeding
+                            if (!user.emailVerified) {  // Updated field name
+                                showError("Email is not verified. Please verify your email before logging in.")
+                                showLoading(false)
+                                return@addOnSuccessListener
+                            }
                             saveUserToLocalStorage(user)
                             showToast("Login successful!")
                             startActivity(Intent(this, LandingPage::class.java))
@@ -128,7 +160,7 @@ class LoginActivity : AppCompatActivity() {
         sharedPreferences.edit().apply {
             putString("uid", user.uid)
             putString("userName", user.userName)
-            putBoolean("isEmailVerified", user.isEmailVerified)
+            putBoolean("emailVerified", user.emailVerified)  // Updated field name
             apply()
         }
     }

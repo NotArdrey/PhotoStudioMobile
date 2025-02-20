@@ -13,21 +13,20 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
 import java.security.MessageDigest
 
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
-    private var databaseReference: DatabaseReference? = null
+    private lateinit var firestore: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_registration)
 
         auth = FirebaseAuth.getInstance()
-        databaseReference = FirebaseDatabase.getInstance().getReference("Users")
+        firestore = FirebaseFirestore.getInstance()
 
         val userNameInput = findViewById<EditText>(R.id.userNameInput)
         val emailInput = findViewById<EditText>(R.id.emailInput)
@@ -36,7 +35,7 @@ class RegisterActivity : AppCompatActivity() {
         val registerButton = findViewById<Button>(R.id.registerButton)
         val loginLink = findViewById<TextView>(R.id.loginLink)
 
-        // Format the "Login here" text in blue
+
         val fullText = "Already have an account? Login here"
         val spannableString = SpannableString(fullText)
         val start = fullText.indexOf("Login here")
@@ -90,24 +89,34 @@ class RegisterActivity : AppCompatActivity() {
                     firebaseUser?.sendEmailVerification()?.addOnCompleteListener { emailTask ->
                         if (emailTask.isSuccessful) {
                             val userId = firebaseUser.uid
-                            // Hash the password using SHA-256
+
                             val hashedPassword = hashPassword(password)
-                            // Create a new User object using a unified data model
+
                             val newUser = User(
                                 uid = userId,
                                 userName = userName,
                                 email = email,
                                 hashedPassword = hashedPassword
                             )
-                            databaseReference?.child(userId)?.setValue(newUser)
-
-                            Toast.makeText(
-                                this,
-                                "Registration successful! Please check your email to verify your account.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            startActivity(Intent(this, LoginActivity::class.java))
-                            finish()
+                            firestore.collection("Users")
+                                .document(userId)
+                                .set(newUser)
+                                .addOnSuccessListener {
+                                    Toast.makeText(
+                                        this,
+                                        "Registration successful! Please check your email to verify your account.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                    startActivity(Intent(this, LoginActivity::class.java))
+                                    finish()
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(
+                                        this,
+                                        "Registration failed: ${e.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                         } else {
                             Toast.makeText(
                                 this,
@@ -126,14 +135,14 @@ class RegisterActivity : AppCompatActivity() {
             }
     }
 
-    // Helper function to hash the password using SHA-256
+
     private fun hashPassword(password: String): String {
         val md = MessageDigest.getInstance("SHA-256")
         val digest = md.digest(password.toByteArray())
         return digest.joinToString(separator = "") { byte -> "%02x".format(byte) }
     }
 
-    // Unified User data model used for both registration and login
+
     data class User(
         val uid: String = "",
         val userName: String = "",

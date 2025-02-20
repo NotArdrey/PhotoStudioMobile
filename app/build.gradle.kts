@@ -42,6 +42,10 @@ android {
 
 dependencies {
 
+        implementation("io.ktor:ktor-server-core:2.3.0")
+        implementation("io.ktor:ktor-server-netty:2.3.0")
+        implementation("io.ktor:ktor-server-content-negotiation:2.3.0")
+        implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.0")
     implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.10.0")
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
@@ -69,6 +73,7 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.functions.ktx)
+    implementation(libs.firebase.firestore.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

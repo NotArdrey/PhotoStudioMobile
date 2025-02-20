@@ -15,6 +15,46 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PhotoStudio"
         tools:targetApi="31">
+
+
+
+        <activity android:name=".PaymentPage"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="com.example.photostudio"
+                    android:pathPrefix="/payment" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="pm.link"
+                    android:pathPrefix="/gcash/success" />
+            </intent-filter>
+        </activity>
+
+
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="www.yourapp.com"
+                    android:pathPrefix="/verify" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".EditAccountPage"
             android:exported="false" />
@@ -23,7 +63,7 @@
             android:exported="false" />
         <activity
             android:name=".AccountPage"
-            android:exported="false" /> <!-- List of activities -->
+            android:exported="false" />
         <activity
             android:name=".LandingPage"
             android:exported="true" />
@@ -37,30 +77,36 @@
             android:name=".GroupPackage"
             android:exported="true" />
 
+        <!-- RegisterActivity with two intent filters -->
         <activity
             android:name=".RegisterActivity"
-            android:exported="true" />
-        <activity
-            android:name=".LoginActivity"
-            android:exported="true" />
-        <activity
-            android:name=".PaymentPage"
             android:exported="true">
+            <!-- Deep link with custom scheme -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data
+                    android:scheme="yourapp"
+                    android:host="payment" />
+            </intent-filter>
+            <!-- Duplicate HTTPS deep link -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
                     android:host="com.example.photostudio"
-                    android:path="/payment"
-                    android:scheme="https" />
+                    android:path="/payment" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".BirthdayPage"
             android:exported="true" />
+
+        <!-- Main launcher activity -->
         <activity
             android:name=".bookingPage"
             android:exported="true"
@@ -68,10 +114,10 @@
             android:theme="@style/Theme.PhotoStudio">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>

@@ -8,7 +8,7 @@
     android:layout_height="match_parent"
     tools:context=".PaymentPage">
 
-    <!-- Header / Navbar (Fixed) -->
+    <!-- Header Layout -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
@@ -56,7 +56,7 @@
             app:layout_constraintBottom_toBottomOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Scrollable Content (Excludes Header) -->
+    <!-- Scrollable Content -->
     <ScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
@@ -67,14 +67,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Inner ConstraintLayout for content -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/contentLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="16dp">
 
-            <!-- Guidelines for flexible margins -->
+            <!-- Guidelines -->
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideline_left"
                 android:layout_width="wrap_content"
@@ -89,7 +88,7 @@
                 app:layout_constraintGuide_end="20dp"
                 android:orientation="vertical" />
 
-            <!-- CardView for Appointment (with CalendarView and TimePicker) -->
+            <!-- Appointment Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/newCardLayout"
                 android:layout_width="0dp"
@@ -123,7 +122,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="300dp" />
 
-                    <!-- TimePicker for time selection -->
                     <TimePicker
                         android:id="@+id/timePicker"
                         android:layout_width="match_parent"
@@ -161,7 +159,6 @@
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
-
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -170,7 +167,7 @@
                         android:orientation="vertical"
                         android:background="@color/white">
 
-                        <!-- Backdrop Dropdown -->
+                        <!-- Default Backdrop Selection -->
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/defaultBackdropDropdownLayout"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -189,7 +186,26 @@
                                 android:dropDownHeight="300dp"/>
                         </com.google.android.material.textfield.TextInputLayout>
 
-                        <!-- Extra Person Selection -->
+                        <!-- Optional Backdrop Selection -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/optionalBackdropDropdownLayout"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:hint="Optional Backdrop">
+
+                            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                                android:id="@+id/optionalBackdropSpinner"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="text"
+                                android:padding="5dp"
+                                android:textSize="14sp"
+                                android:dropDownHeight="300dp"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Extra Person Section -->
                         <LinearLayout
                             android:id="@+id/extraPersonSection"
                             android:layout_width="match_parent"
@@ -215,68 +231,7 @@
                                 android:gravity="center" />
                         </LinearLayout>
 
-                        <!-- Extra Backdrop Selection -->
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginTop="8dp">
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:text="Extra backdrop change - P200"
-                                android:textSize="14sp"
-                                android:textColor="#555555"
-                                android:layout_weight="1" />
-
-                            <EditText
-                                android:id="@+id/backdropQty"
-                                android:layout_width="50dp"
-                                android:layout_height="wrap_content"
-                                android:inputType="number"
-                                android:text="0"
-                                android:gravity="center" />
-                        </LinearLayout>
-
-
-                        <androidx.cardview.widget.CardView
-                            android:id="@+id/dynamicBackdropCard"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_margin="10dp"
-                            app:cardCornerRadius="8dp"
-                            app:cardElevation="5dp"
-                            android:background="#EFEFEF"
-                            android:visibility="gone">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="vertical"
-                                android:padding="16dp">
-
-                                <TextView
-                                    android:id="@+id/dynamicBackdropTitle"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Select a Backdrop Option"
-                                    android:textColor="#333333"
-                                    android:textSize="14sp"
-                                    android:textStyle="bold" />
-
-                                <com.google.android.material.chip.ChipGroup
-                                    android:id="@+id/backdropChipGroup"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="8dp"
-                                    app:singleSelection="true"
-                                    app:chipSpacing="8dp" />
-                            </LinearLayout>
-                        </androidx.cardview.widget.CardView>
-
-
+                        <!-- Soft Copy Section -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -305,7 +260,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-
+            <!-- Payment Buttons -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/full_payment_button"
                 android:layout_width="0dp"
@@ -346,6 +301,7 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
+    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="0dp"
@@ -357,4 +313,16 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- WebView Overlay for Checkout -->
+    <WebView
+        android:id="@+id/paymentWebView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
