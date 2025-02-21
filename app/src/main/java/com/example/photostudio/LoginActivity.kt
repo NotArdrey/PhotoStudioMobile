@@ -160,7 +160,7 @@ class LoginActivity : AppCompatActivity() {
         sharedPreferences.edit().apply {
             putString("uid", user.uid)
             putString("userName", user.userName)
-            putBoolean("emailVerified", user.emailVerified)  // Updated field name
+            putBoolean("emailVerified", user.emailVerified)
             apply()
         }
     }

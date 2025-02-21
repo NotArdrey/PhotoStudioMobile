@@ -8,7 +8,7 @@
     android:layout_height="match_parent"
     tools:context=".PaymentPage">
 
-    <!-- Header Layout -->
+    <!-- Header Layout (unchanged) -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
@@ -18,7 +18,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
-
+        <!-- Header contents here -->
         <TextView
             android:id="@+id/titleTextView"
             android:layout_width="0dp"
@@ -88,7 +88,6 @@
                 app:layout_constraintGuide_end="20dp"
                 android:orientation="vertical" />
 
-            <!-- Appointment Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/newCardLayout"
                 android:layout_width="0dp"
@@ -110,28 +109,50 @@
                         android:id="@+id/AppontmentTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Appointment"
                         android:layout_marginTop="15dp"
                         android:layout_gravity="center"
+                        android:text="Appointment"
+                        android:textColor="#333333"
                         android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="#333333" />
+                        android:textStyle="bold" />
 
-                    <CalendarView
-                        android:id="@+id/calendarView"
-                        android:layout_width="match_parent"
-                        android:layout_height="300dp" />
-
-                    <TimePicker
-                        android:id="@+id/timePicker"
+                    <!-- Date Input (Calendar) -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/dateTextInputLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        android:timePickerMode="spinner" />
+                        android:hint="Select Date">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/dateEditText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:cursorVisible="false" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Time Input (Dropdown) -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/timeTextInputLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:hint="Select Time">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/timeDropdown"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Payment Details Card -->
+            <!-- Payment Details Card (unchanged) -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/paymentDetailsCard"
                 android:layout_width="0dp"

@@ -1,5 +1,6 @@
 package com.example.photostudio
 
+import android.app.DatePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -17,6 +18,7 @@ import androidx.lifecycle.*
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.firestore.FirebaseFirestore
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -25,6 +27,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.util.Base64
+import java.util.Calendar
+
+// Top-level utility function for encoding API keys
+fun encodeApiKey(apiKey: String): String {
+    return Base64.getEncoder().encodeToString("$apiKey:".toByteArray())
+}
 
 class PaymentPage : AppCompatActivity() {
 
@@ -32,6 +40,10 @@ class PaymentPage : AppCompatActivity() {
     private var pendingPaymentData: Map<String, Any>? = null
     private lateinit var firestore: FirebaseFirestore
     private lateinit var paymentWebView: WebView
+
+    // New variables for dynamic date and time
+    var selectedDate: Long? = null
+    var selectedTime: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,42 +59,38 @@ class PaymentPage : AppCompatActivity() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 Log.d("PaymentPage", "WebView shouldOverrideUrlLoading called with URL: $url")
                 url?.let {
-                    // Check if the URL is our deep link (either from our own domain or pm.link)
                     if (it.startsWith("https://com.example.photostudio/payment") ||
                         it.startsWith("https://pm.link/gcash/success") ||
                         it.startsWith("https://pm.link/gcash/failed")
                     ) {
                         val uri = Uri.parse(it)
                         Log.d("PaymentPage", "Deep link detected in WebView: $uri")
-                        // Try to extract the status from the query parameters.
                         var status = uri.getQueryParameter("status")
-                        // If status is missing, infer from the URL path.
                         if (status == null) {
-                            if (it.contains("gcash/success")) {
-                                status = "success"
-                            } else if (it.contains("gcash/failed")) {
+                            if (it.contains("gcash/success", ignoreCase = true)) {
+                                status = "paid"
+                            } else if (it.contains("gcash/failed", ignoreCase = true)) {
                                 status = "failed"
                             }
                         }
                         Log.d("PaymentPage", "Status from deep link: $status")
-                        if (status == "success") {
+                        if (status.equals("paid", ignoreCase = true) || status.equals("succeeded", ignoreCase = true)) {
                             Toast.makeText(this@PaymentPage, "Payment successful", Toast.LENGTH_SHORT).show()
-                            val paymentId = uri.getQueryParameter("payment_id")
-                            Log.d("PaymentPage", "Payment ID from deep link: $paymentId")
-                            if (paymentId != null) {
-                                viewModel.getPaymentDetails(paymentId)
+                            val paymentLinkId = pendingPaymentData?.get("paymentLinkId") as? String
+                            val expectedDesc = pendingPaymentData?.get("description") as? String ?: ""
+                            if (paymentLinkId != null) {
+                                Log.d("PaymentPage", "Fetching payments for link ID: $paymentLinkId")
+                                viewModel.getPaymentsForLink(paymentLinkId, expectedDesc)
+                            } else {
+                                Log.e("PaymentPage", "Payment link ID not found")
                             }
-                        } else if (status == "failed") {
+                        } else if (status.equals("failed", ignoreCase = true)) {
                             Toast.makeText(this@PaymentPage, "Payment failed", Toast.LENGTH_SHORT).show()
                             Log.d("PaymentPage", "Payment failed branch in WebView")
                         }
-                        // Hide the WebView after processing the deep link
                         paymentWebView.visibility = View.GONE
                         Log.d("PaymentPage", "WebView visibility set to GONE")
-                        // Clear focus and hide keyboard
-                        Handler(Looper.getMainLooper()).post {
-                            clearFocusAndHideKeyboard()
-                        }
+                        Handler(Looper.getMainLooper()).post { clearFocusAndHideKeyboard() }
                         return true
                     }
                 }
@@ -102,49 +110,200 @@ class PaymentPage : AppCompatActivity() {
         val showExtraSection = intent.getBooleanExtra("showExtraSection", false)
         val extraPersonQtyInput = findViewById<EditText>(R.id.extraPersonQty)
         val softCopyQtyInput = findViewById<EditText>(R.id.softCopyQty)
-        val calendarView = findViewById<CalendarView>(R.id.calendarView)
-        val timePicker = findViewById<TimePicker>(R.id.timePicker)
+
         val defaultBackdropAutoComplete = findViewById<MaterialAutoCompleteTextView>(R.id.defaultBackdropSpinner)
         val extraBackdropAutoComplete = findViewById<MaterialAutoCompleteTextView>(R.id.optionalBackdropSpinner)
         val defaultBackdropLayout = findViewById<TextInputLayout>(R.id.defaultBackdropDropdownLayout)
 
-        val paymentButton: Button = findViewById(R.id.downpayment_button)
-        val fullPaymentButton: Button = findViewById(R.id.full_payment_button)
+        // Set adapters for backdrop dropdowns with color options.
+        val colorOptions = listOf("Select Color", "Red", "Blue", "Green", "Yellow")
+        val colorAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, colorOptions)
+        defaultBackdropAutoComplete.setAdapter(colorAdapter)
+        extraBackdropAutoComplete.setAdapter(colorAdapter)
 
-        // Retrieve and hide the bottom navigation view
+        // Retrieve and hide the bottom navigation view.
         val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
         bottomNavigationView.visibility = View.GONE
 
         extraPersonSection.visibility = if (showExtraSection) View.VISIBLE else View.GONE
 
+        // ----------------- PREPARE TIME DROPDOWN AND HELPER FUNCTION ------------------
+        // Declare the timeDropdown first so it's available in all scopes.
+        val timeDropdown = findViewById<MaterialAutoCompleteTextView>(R.id.timeDropdown)
+        fun generateTimeSlots(startHour: Int, endHour: Int, intervalMinutes: Int): List<String> {
+            val slots = mutableListOf<String>()
+            var hour = startHour
+            var minute = 0
+            // Generate slots up to and including the last allowed start time (18:30)
+            while (hour < endHour || (hour == endHour && minute == 0)) {
+                slots.add(String.format("%02d:%02d", hour, minute))
+                minute += intervalMinutes
+                if (minute >= 60) {
+                    minute %= 60
+                    hour++
+                }
+            }
+            return slots
+        }
+        // Initially, set the dropdown adapter with the full set of fixed time slots.
+        val allFixedTimeSlots = generateTimeSlots(9, 18, 30)
+        val timeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, allFixedTimeSlots.toMutableList())
+        timeDropdown.setAdapter(timeAdapter)
+
+        timeDropdown.setOnItemClickListener { _, _, position, _ ->
+            selectedTime = (timeDropdown.adapter as ArrayAdapter<String>).getItem(position)
+        }
+
+        // ----------------- END PREPARE TIME DROPDOWN ------------------
+
+        // ----------------- DYNAMIC CALENDAR DATE AND TIME IMPLEMENTATION ------------------
+
+        // Date selection using a DatePickerDialog on the date EditText.
+        val dateEditText = findViewById<TextInputEditText>(R.id.dateEditText)
+        val calendar = Calendar.getInstance()
+        // Set tomorrow as the minimum date
+        val tomorrowCalendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+        dateEditText.setOnClickListener {
+            val dpd = DatePickerDialog(
+                this,
+                { _, year, month, dayOfMonth ->
+                    val selectedCal = Calendar.getInstance().apply { set(year, month, dayOfMonth) }
+                    selectedDate = selectedCal.timeInMillis
+                    dateEditText.setText("$dayOfMonth/${month + 1}/$year")
+
+                    // --- Firestore Query to Filter Time Slots Based on Booked Appointments ---
+                    firestore.collection("appointments")
+                        .whereEqualTo("appointmentDate", selectedDate)
+                        .get()
+                        .addOnSuccessListener { querySnapshot ->
+                            val bookedTimes = mutableSetOf<String>()
+                            for (document in querySnapshot.documents) {
+                                document.getString("appointmentTime")?.let { bookedTime ->
+                                    bookedTimes.add(bookedTime)
+                                }
+                            }
+                            // Filter fixed time slots for available times.
+                            val availableTimes = allFixedTimeSlots.filter { it !in bookedTimes }
+
+                            // Update the timeDropdown adapter with available times.
+                            (timeDropdown.adapter as ArrayAdapter<String>).clear()
+                            (timeDropdown.adapter as ArrayAdapter<String>).addAll(availableTimes)
+                            (timeDropdown.adapter as ArrayAdapter<String>).notifyDataSetChanged()
+
+                            // Optionally clear a previously selected time if it is no longer available.
+                            if (selectedTime != null && selectedTime !in availableTimes) {
+                                selectedTime = null
+                                timeDropdown.setText("")
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("PaymentPage", "Failed to fetch appointments: ${e.message}")
+                        }
+                    // --- End Firestore Query ---
+                },
+                tomorrowCalendar.get(Calendar.YEAR),
+                tomorrowCalendar.get(Calendar.MONTH),
+                tomorrowCalendar.get(Calendar.DAY_OF_MONTH)
+            )
+            dpd.datePicker.minDate = tomorrowCalendar.timeInMillis
+            dpd.show()
+        }
+
+        // ----------------- END DYNAMIC CALENDAR DATE AND TIME IMPLEMENTATION ------------------
+
+        // Function to build payment data, including time validations.
         fun buildPaymentData(paymentType: String): Map<String, Any>? {
             val defaultBackdropValue = defaultBackdropAutoComplete.text.toString().trim()
-            if (defaultBackdropValue.isEmpty() || defaultBackdropValue == "Select Backdrop") {
-                defaultBackdropLayout.error = "Backdrop selection is required"
-                Log.d("PaymentPage", "Default backdrop not selected")
+            if (defaultBackdropValue.isEmpty() || defaultBackdropValue == "Select Color") {
+                defaultBackdropLayout.error = "Color selection is required"
+                Log.d("PaymentPage", "Default backdrop (color) not selected")
                 return null
             } else {
                 defaultBackdropLayout.error = null
             }
 
-            val extraPersonAmount = defaultPax * 200
-            val extraBackdropCost = if (extraBackdropAutoComplete.text.toString().isNotEmpty() &&
-                extraBackdropAutoComplete.text.toString() != "Select Backdrop") 200 else 0
-            val packagePriceInt = packagePriceStr?.toIntOrNull() ?: 0
+            // Retrieve extra backdrop value.
+            val extraBackdropValue = extraBackdropAutoComplete.text.toString().trim()
+            if (extraBackdropValue.isNotEmpty() && extraBackdropValue != "Select Color") {
+                if (extraBackdropValue == defaultBackdropValue) {
+                    Toast.makeText(
+                        this,
+                        "Extra backdrop color cannot be the same as the default color.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    Log.d("PaymentPage", "Extra backdrop color same as default")
+                    return null
+                }
+            }
 
-            val totalAmount = extraPersonAmount + extraBackdropCost + packagePriceInt
-            Log.d("PaymentPage", "Total amount calculated: $totalAmount")
+            val extraPersonAmount = defaultPax * 200
+            val extraBackdropCost = if (extraBackdropValue.isNotEmpty() && extraBackdropValue != "Select Color") 200 else 0
+            val packagePriceInt = packagePriceStr?.toIntOrNull() ?: 0
+            val totalAmount = (extraPersonAmount + extraBackdropCost + packagePriceInt) * 100  // Multiply by 100 for PayMongo
 
             val extraPersonQtyValue = extraPersonQtyInput.text.toString().toIntOrNull() ?: 0
             val softCopyQtyValue = softCopyQtyInput.text.toString().toIntOrNull() ?: 0
 
-            val appointmentDate = calendarView.date
+            // Use dynamic date from dateEditText
+            if (selectedDate == null) {
+                Toast.makeText(this, "Please select a date.", Toast.LENGTH_SHORT).show()
+                return null
+            }
+            val appointmentDate = selectedDate!!
 
-            val appointmentHour = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
-                timePicker.hour else timePicker.currentHour
-            val appointmentMinute = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
-                timePicker.minute else timePicker.currentMinute
-            val appointmentTime = "$appointmentHour:$appointmentMinute"
+            // Validate that the selected date is not in the past.
+            val currentCalendar = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val todayStart = currentCalendar.timeInMillis
+            if (appointmentDate < todayStart) {
+                Toast.makeText(this, "You cannot select a past date.", Toast.LENGTH_SHORT).show()
+                return null
+            }
+            if (appointmentDate < todayStart + 24 * 60 * 60 * 1000) {
+                Toast.makeText(this, "Reservations must be made at least one day in advance.", Toast.LENGTH_SHORT).show()
+                return null
+            }
+
+            // Use dynamic time from timeDropdown
+            if (selectedTime.isNullOrEmpty()) {
+                Toast.makeText(this, "Please select a time.", Toast.LENGTH_SHORT).show()
+                return null
+            }
+            val parts = selectedTime!!.split(":")
+            if (parts.size != 2) {
+                Toast.makeText(this, "Invalid time format.", Toast.LENGTH_SHORT).show()
+                return null
+            }
+            val appointmentHour = parts[0].toIntOrNull() ?: 0
+            val appointmentMinute = parts[1].toIntOrNull() ?: 0
+
+            // Validate that the selected time is within studio hours.
+            // Studio hours: 9:00 AM to 7:00 PM.
+            // Since each session lasts 30 minutes, the latest allowed start time is 6:30 PM.
+            val selectedTimeInMinutes = appointmentHour * 60 + appointmentMinute
+            val openingTime = 9 * 60               // 9:00 AM = 540 minutes
+            val lastAllowedStartTime = 18 * 60 + 30  // 6:30 PM = 1110 minutes
+
+            if (selectedTimeInMinutes < openingTime || selectedTimeInMinutes > lastAllowedStartTime) {
+                Toast.makeText(
+                    this,
+                    "Please select a time between 9:00 AM and 6:30 PM. Each session lasts 30 minutes.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return null
+            }
+
+            val appointmentTime = selectedTime!!
+
+            // Check for scheduling conflicts (stubbed—replace with your actual logic).
+            if (checkScheduleConflict(appointmentDate, appointmentTime)) {
+                Toast.makeText(this, "There is a conflict in your schedule for the selected date/time.", Toast.LENGTH_SHORT).show()
+                return null
+            }
 
             val sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE)
             val uid = sharedPreferences.getString("uid", null)
@@ -152,13 +311,13 @@ class PaymentPage : AppCompatActivity() {
                 Log.d("PaymentPage", "Building payment data with UID: $uid")
                 mapOf(
                     "uid" to uid,
-                    "totalAmount" to totalAmount,
+                    "totalAmount" to totalAmount / 100,
                     "description" to "Captured By K Package: $description",
                     "paymentType" to paymentType,
                     "extraPersonQty" to extraPersonQtyValue,
                     "softCopyQty" to softCopyQtyValue,
                     "defaultBackdrop" to defaultBackdropValue,
-                    "selectedExtraBackdrop" to extraBackdropAutoComplete.text.toString(),
+                    "selectedExtraBackdrop" to extraBackdropValue,
                     "appointmentDate" to appointmentDate,
                     "appointmentTime" to appointmentTime
                 )
@@ -167,6 +326,10 @@ class PaymentPage : AppCompatActivity() {
                 null
             }
         }
+
+        // Payment button click listeners.
+        val paymentButton: Button = findViewById(R.id.downpayment_button)
+        val fullPaymentButton: Button = findViewById(R.id.full_payment_button)
 
         paymentButton.setOnClickListener {
             Log.d("PaymentPage", "Downpayment button clicked")
@@ -191,7 +354,17 @@ class PaymentPage : AppCompatActivity() {
         viewModel = ViewModelProvider(this, PaymentViewModelFactory())
             .get(PaymentViewModel::class.java)
 
-        // Observe the redirect URL; when available, load it in the WebView
+        // Observe Payment Link ID and store it in pendingPaymentData.
+        viewModel.paymentLinkId.observe(this) { linkId ->
+            linkId?.let {
+                pendingPaymentData = pendingPaymentData?.toMutableMap()?.apply {
+                    put("paymentLinkId", it)
+                } ?: mutableMapOf("paymentLinkId" to it)
+                Log.d("PaymentPage", "Stored payment link ID: $it")
+            }
+        }
+
+        // Observe the redirect URL; when available, load it in the WebView.
         viewModel.redirectUrl.observe(this) { url ->
             if (!url.isNullOrEmpty()) {
                 Log.d("PaymentPage", "Loading checkout URL in WebView: $url")
@@ -203,7 +376,7 @@ class PaymentPage : AppCompatActivity() {
             }
         }
 
-        // Observe the payment details after calling getPaymentDetails
+        // Observe the payment details after calling getPaymentDetails or getPaymentsForLink.
         viewModel.paymentDetails.observe(this) { json ->
             Log.d("PaymentPage", "Observed payment details: $json")
             if (json != null) {
@@ -211,36 +384,38 @@ class PaymentPage : AppCompatActivity() {
                     .optJSONObject("data")
                     ?.optJSONObject("attributes")
                     ?.optString("status")
+                    ?.trim()
+                    ?.toLowerCase()
                 Log.d("PaymentPage", "Payment details status: $status")
-                if (status == "paid") {
+                if (status == "paid" || status == "succeeded") {
                     Toast.makeText(this, "Payment completed successfully.", Toast.LENGTH_LONG).show()
-                    Log.d("PaymentPage", "Payment completed successfully. Details: $json")
-                    // Save the stored payment data to Firestore if available
+                    Log.d("PaymentPage", "Payment successful. Preparing to write paymentData to Firestore.")
                     pendingPaymentData?.let { paymentData ->
-                        Log.d("PaymentPage", "Writing paymentData to Firestore: $paymentData")
+                        Log.d("PaymentPage", "Payment data to be saved: $paymentData")
                         firestore.collection("payments")
                             .add(paymentData)
                             .addOnSuccessListener { documentReference ->
                                 Log.d("PaymentPage", "Payment data saved with ID: ${documentReference.id}")
-                                // Finish the activity only after Firestore write is successful.
+                                pendingPaymentData = null
                                 finish()
                             }
                             .addOnFailureListener { e ->
                                 Log.e("PaymentPage", "Error saving payment data to Firestore", e)
-                                // Optionally finish the activity even if there is an error.
-                                finish()
+                                Toast.makeText(this, "Error saving payment data", Toast.LENGTH_SHORT).show()
                             }
-                        pendingPaymentData = null
+                    } ?: run {
+                        Log.e("PaymentPage", "No pendingPaymentData available. Cannot write to Firestore.")
                     }
                 } else {
-                    Toast.makeText(this, "Payment not completed yet.", Toast.LENGTH_LONG).show()
-                    Log.d("PaymentPage", "Payment details not paid: $json")
+                    Toast.makeText(this, "Payment not completed yet. Status: $status", Toast.LENGTH_LONG).show()
+                    Log.d("PaymentPage", "Payment details indicate that payment is not successful: $json")
                 }
+            } else {
+                Log.e("PaymentPage", "Received null payment details JSON.")
             }
         }
     }
 
-    // Handle deep links when the activity is already running
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Log.d("PaymentPage", "onNewIntent called with intent: ${intent.data}")
@@ -249,28 +424,29 @@ class PaymentPage : AppCompatActivity() {
             var status = uri.getQueryParameter("status")
             if (status == null) {
                 val url = uri.toString()
-                if (url.contains("gcash/success")) {
-                    status = "success"
-                } else if (url.contains("gcash/failed")) {
+                if (url.contains("gcash/success", ignoreCase = true)) {
+                    status = "paid"
+                } else if (url.contains("gcash/failed", ignoreCase = true)) {
                     status = "failed"
                 }
             }
             Log.d("PaymentPage", "Status in onNewIntent: $status")
             if (status != null) {
-                if (status == "success") {
+                if (status.equals("paid", ignoreCase = true) || status.equals("succeeded", ignoreCase = true)) {
                     Toast.makeText(this, "Payment successful", Toast.LENGTH_SHORT).show()
-                    val paymentId = uri.getQueryParameter("payment_id")
-                    Log.d("PaymentPage", "Payment ID in onNewIntent: $paymentId")
-                    if (paymentId != null) {
-                        viewModel.getPaymentDetails(paymentId)
+                    val paymentLinkId = pendingPaymentData?.get("paymentLinkId") as? String
+                    val expectedDesc = pendingPaymentData?.get("description") as? String ?: ""
+                    if (paymentLinkId != null) {
+                        Log.d("PaymentPage", "Fetching payments for link ID: $paymentLinkId")
+                        viewModel.getPaymentsForLink(paymentLinkId, expectedDesc)
+                    } else {
+                        Log.e("PaymentPage", "Payment link ID not found in onNewIntent")
                     }
-                } else if (status == "failed") {
+                } else if (status.equals("failed", ignoreCase = true)) {
                     Toast.makeText(this, "Payment failed", Toast.LENGTH_SHORT).show()
                     Log.d("PaymentPage", "Payment failed branch in onNewIntent")
                 }
-                Handler(Looper.getMainLooper()).post {
-                    clearFocusAndHideKeyboard()
-                }
+                Handler(Looper.getMainLooper()).post { clearFocusAndHideKeyboard() }
             } else {
                 val paymentId = uri.getQueryParameter("payment_id")
                 if (paymentId != null) {
@@ -283,15 +459,18 @@ class PaymentPage : AppCompatActivity() {
         } ?: Log.d("PaymentPage", "No URI data in onNewIntent")
     }
 
-    // Helper function to clear focus and hide the keyboard
     private fun clearFocusAndHideKeyboard() {
-        // Clear focus from the current view (if any) before hiding the keyboard.
         currentFocus?.clearFocus()
         currentFocus?.let { view ->
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.hideSoftInputFromWindow(view.windowToken, 0)
             Log.d("PaymentPage", "Keyboard hidden")
         }
+    }
+
+    // Dummy function to simulate schedule conflict checking.
+    private fun checkScheduleConflict(selectedDate: Long, appointmentTime: String): Boolean {
+        return false
     }
 
     class PaymentViewModelFactory : ViewModelProvider.Factory {
@@ -314,12 +493,15 @@ class PaymentPage : AppCompatActivity() {
         private val _paymentDetails = MutableLiveData<JSONObject?>()
         val paymentDetails: LiveData<JSONObject?> get() = _paymentDetails
 
+        // LiveData to capture the payment link ID.
+        private val _paymentLinkId = MutableLiveData<String?>()
+        val paymentLinkId: LiveData<String?> get() = _paymentLinkId
+
         private val apiClient = createApiClient()
 
         fun createPaymentLink(amount: Int, description: String) {
             val convertedAmount = amount * 100
 
-            // Prepare the JSON payload for creating the payment link.
             val requestBody = JSONObject().apply {
                 put("data", JSONObject().apply {
                     put("attributes", JSONObject().apply {
@@ -366,8 +548,12 @@ class PaymentPage : AppCompatActivity() {
                         try {
                             val jsonResponse = JSONObject(responseBody)
                             Log.d("PaymentViewModel", "Parsed JSON: $jsonResponse")
-                            val checkoutUrl = jsonResponse
-                                .optJSONObject("data")
+                            // Capture the Payment Link ID.
+                            val data = jsonResponse.optJSONObject("data")
+                            val id = data?.optString("id")
+                            _paymentLinkId.postValue(id)
+                            // Retrieve and post the checkout URL.
+                            val checkoutUrl = data
                                 ?.optJSONObject("attributes")
                                 ?.optString("checkout_url")
                             if (!checkoutUrl.isNullOrEmpty()) {
@@ -391,7 +577,6 @@ class PaymentPage : AppCompatActivity() {
 
         fun getPaymentDetails(paymentId: String) {
             Log.d("PaymentViewModel", "getPaymentDetails called with paymentId: $paymentId")
-            // Simulate a paid response for testing if paymentId is "test123"
             if (paymentId == "test123") {
                 val simulatedResponse = JSONObject("""{
                     "data": {
@@ -439,8 +624,87 @@ class PaymentPage : AppCompatActivity() {
             })
         }
 
-        private fun encodeApiKey(apiKey: String): String {
-            return Base64.getEncoder().encodeToString("$apiKey:".toByteArray())
+        // Updated getPaymentsForLink that now accepts an expectedDescription parameter.
+        fun getPaymentsForLink(linkId: String, expectedDescription: String) {
+            val request = Request.Builder()
+                .url("https://api.paymongo.com/v1/links/$linkId")
+                .get()
+                .addHeader("Authorization", "Basic ${encodeApiKey("sk_test_yESi8KQWKn2mCE4ZnvKksGVk")}")
+                .build()
+
+            apiClient.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    _error.postValue("Failed to retrieve link details: ${e.message}")
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val responseBody = response.body?.string()
+                    if (response.isSuccessful && responseBody != null) {
+                        try {
+                            val json = JSONObject(responseBody)
+                            val linkData = json.getJSONObject("data")
+                                .getJSONObject("attributes")
+                            // Retrieve the reference number from the link details.
+                            val referenceNumber = linkData.getString("reference_number")
+                            Log.d("PaymentViewModel", "Link reference number: $referenceNumber")
+                            Log.d("PaymentViewModel", "Fetching payments using alternative matching logic.")
+                            getPaymentsForReference(referenceNumber, expectedDescription)
+                        } catch (e: Exception) {
+                            _error.postValue("Error parsing link details: ${e.message}")
+                        }
+                    } else {
+                        _error.postValue("Failed to fetch link details: HTTP ${response.code}")
+                    }
+                }
+            })
+        }
+
+        // Modified filtering logic: match using the expected description passed in.
+        private fun getPaymentsForReference(referenceNumber: String, expectedDescription: String) {
+            val request = Request.Builder()
+                .url("https://api.paymongo.com/v1/payments")
+                .get()
+                .addHeader("Authorization", "Basic ${encodeApiKey("sk_test_yESi8KQWKn2mCE4ZnvKksGVk")}")
+                .build()
+
+            apiClient.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    _error.postValue("Failed to retrieve payments: ${e.message}")
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    val responseBody = response.body?.string()
+                    if (response.isSuccessful && responseBody != null) {
+                        try {
+                            val json = JSONObject(responseBody)
+                            val payments = json.getJSONArray("data")
+                            var foundPaymentId: String? = null
+                            for (i in 0 until payments.length()) {
+                                val paymentObj = payments.getJSONObject(i)
+                                val attributes = paymentObj.getJSONObject("attributes")
+                                val status = attributes.optString("status", "").trim().toLowerCase()
+                                val paymentDescription = attributes.optString("description", "")
+                                if ((status == "paid" || status == "succeeded") &&
+                                    paymentDescription.contains(expectedDescription, ignoreCase = true)
+                                ) {
+                                    foundPaymentId = paymentObj.getString("id")
+                                    break
+                                }
+                            }
+                            if (foundPaymentId != null) {
+                                Log.d("PaymentViewModel", "Found matching payment ID: $foundPaymentId")
+                                getPaymentDetails(foundPaymentId)
+                            } else {
+                                _error.postValue("No payments found matching description: $expectedDescription")
+                            }
+                        } catch (e: Exception) {
+                            _error.postValue("Error parsing payments: ${e.message}")
+                        }
+                    } else {
+                        _error.postValue("Failed to fetch payments: HTTP ${response.code}")
+                    }
+                }
+            })
         }
 
         private fun createApiClient(): OkHttpClient {
