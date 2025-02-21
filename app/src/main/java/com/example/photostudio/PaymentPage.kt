@@ -1,5 +1,6 @@
 package com.example.photostudio
 
+import android.app.DatePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -17,6 +18,7 @@ import androidx.lifecycle.*
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.firestore.FirebaseFirestore
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -38,6 +40,10 @@ class PaymentPage : AppCompatActivity() {
     private var pendingPaymentData: Map<String, Any>? = null
     private lateinit var firestore: FirebaseFirestore
     private lateinit var paymentWebView: WebView
+
+    // New variables for dynamic date and time
+    var selectedDate: Long? = null
+    var selectedTime: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,8 +110,7 @@ class PaymentPage : AppCompatActivity() {
         val showExtraSection = intent.getBooleanExtra("showExtraSection", false)
         val extraPersonQtyInput = findViewById<EditText>(R.id.extraPersonQty)
         val softCopyQtyInput = findViewById<EditText>(R.id.softCopyQty)
-        val calendarView = findViewById<CalendarView>(R.id.calendarView)
-        val timePicker = findViewById<TimePicker>(R.id.timePicker)
+
         val defaultBackdropAutoComplete = findViewById<MaterialAutoCompleteTextView>(R.id.defaultBackdropSpinner)
         val extraBackdropAutoComplete = findViewById<MaterialAutoCompleteTextView>(R.id.optionalBackdropSpinner)
         val defaultBackdropLayout = findViewById<TextInputLayout>(R.id.defaultBackdropDropdownLayout)
@@ -122,10 +127,89 @@ class PaymentPage : AppCompatActivity() {
 
         extraPersonSection.visibility = if (showExtraSection) View.VISIBLE else View.GONE
 
-        // Set minimum date for CalendarView to tomorrow (reservations must be made at least one day in advance).
-        val tomorrowCalendar = Calendar.getInstance()
-        tomorrowCalendar.add(Calendar.DAY_OF_YEAR, 1)
-        calendarView.minDate = tomorrowCalendar.timeInMillis
+        // ----------------- PREPARE TIME DROPDOWN AND HELPER FUNCTION ------------------
+        // Declare the timeDropdown first so it's available in all scopes.
+        val timeDropdown = findViewById<MaterialAutoCompleteTextView>(R.id.timeDropdown)
+        fun generateTimeSlots(startHour: Int, endHour: Int, intervalMinutes: Int): List<String> {
+            val slots = mutableListOf<String>()
+            var hour = startHour
+            var minute = 0
+            // Generate slots up to and including the last allowed start time (18:30)
+            while (hour < endHour || (hour == endHour && minute == 0)) {
+                slots.add(String.format("%02d:%02d", hour, minute))
+                minute += intervalMinutes
+                if (minute >= 60) {
+                    minute %= 60
+                    hour++
+                }
+            }
+            return slots
+        }
+        // Initially, set the dropdown adapter with the full set of fixed time slots.
+        val allFixedTimeSlots = generateTimeSlots(9, 18, 30)
+        val timeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, allFixedTimeSlots.toMutableList())
+        timeDropdown.setAdapter(timeAdapter)
+
+        timeDropdown.setOnItemClickListener { _, _, position, _ ->
+            selectedTime = (timeDropdown.adapter as ArrayAdapter<String>).getItem(position)
+        }
+
+        // ----------------- END PREPARE TIME DROPDOWN ------------------
+
+        // ----------------- DYNAMIC CALENDAR DATE AND TIME IMPLEMENTATION ------------------
+
+        // Date selection using a DatePickerDialog on the date EditText.
+        val dateEditText = findViewById<TextInputEditText>(R.id.dateEditText)
+        val calendar = Calendar.getInstance()
+        // Set tomorrow as the minimum date
+        val tomorrowCalendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+        dateEditText.setOnClickListener {
+            val dpd = DatePickerDialog(
+                this,
+                { _, year, month, dayOfMonth ->
+                    val selectedCal = Calendar.getInstance().apply { set(year, month, dayOfMonth) }
+                    selectedDate = selectedCal.timeInMillis
+                    dateEditText.setText("$dayOfMonth/${month + 1}/$year")
+
+                    // --- Firestore Query to Filter Time Slots Based on Booked Appointments ---
+                    firestore.collection("appointments")
+                        .whereEqualTo("appointmentDate", selectedDate)
+                        .get()
+                        .addOnSuccessListener { querySnapshot ->
+                            val bookedTimes = mutableSetOf<String>()
+                            for (document in querySnapshot.documents) {
+                                document.getString("appointmentTime")?.let { bookedTime ->
+                                    bookedTimes.add(bookedTime)
+                                }
+                            }
+                            // Filter fixed time slots for available times.
+                            val availableTimes = allFixedTimeSlots.filter { it !in bookedTimes }
+
+                            // Update the timeDropdown adapter with available times.
+                            (timeDropdown.adapter as ArrayAdapter<String>).clear()
+                            (timeDropdown.adapter as ArrayAdapter<String>).addAll(availableTimes)
+                            (timeDropdown.adapter as ArrayAdapter<String>).notifyDataSetChanged()
+
+                            // Optionally clear a previously selected time if it is no longer available.
+                            if (selectedTime != null && selectedTime !in availableTimes) {
+                                selectedTime = null
+                                timeDropdown.setText("")
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("PaymentPage", "Failed to fetch appointments: ${e.message}")
+                        }
+                    // --- End Firestore Query ---
+                },
+                tomorrowCalendar.get(Calendar.YEAR),
+                tomorrowCalendar.get(Calendar.MONTH),
+                tomorrowCalendar.get(Calendar.DAY_OF_MONTH)
+            )
+            dpd.datePicker.minDate = tomorrowCalendar.timeInMillis
+            dpd.show()
+        }
+
+        // ----------------- END DYNAMIC CALENDAR DATE AND TIME IMPLEMENTATION ------------------
 
         // Function to build payment data, including time validations.
         fun buildPaymentData(paymentType: String): Map<String, Any>? {
@@ -155,13 +239,18 @@ class PaymentPage : AppCompatActivity() {
             val extraPersonAmount = defaultPax * 200
             val extraBackdropCost = if (extraBackdropValue.isNotEmpty() && extraBackdropValue != "Select Color") 200 else 0
             val packagePriceInt = packagePriceStr?.toIntOrNull() ?: 0
-            val totalAmount = extraPersonAmount + extraBackdropCost + packagePriceInt
-            Log.d("PaymentPage", "Total amount calculated: $totalAmount")
+            val totalAmount = (extraPersonAmount + extraBackdropCost + packagePriceInt) * 100  // Multiply by 100 for PayMongo
 
             val extraPersonQtyValue = extraPersonQtyInput.text.toString().toIntOrNull() ?: 0
             val softCopyQtyValue = softCopyQtyInput.text.toString().toIntOrNull() ?: 0
 
-            val appointmentDate = calendarView.date
+            // Use dynamic date from dateEditText
+            if (selectedDate == null) {
+                Toast.makeText(this, "Please select a date.", Toast.LENGTH_SHORT).show()
+                return null
+            }
+            val appointmentDate = selectedDate!!
+
             // Validate that the selected date is not in the past.
             val currentCalendar = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)
@@ -179,11 +268,18 @@ class PaymentPage : AppCompatActivity() {
                 return null
             }
 
-            // Retrieve the time from the TimePicker.
-            val appointmentHour = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
-                timePicker.hour else timePicker.currentHour
-            val appointmentMinute = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
-                timePicker.minute else timePicker.currentMinute
+            // Use dynamic time from timeDropdown
+            if (selectedTime.isNullOrEmpty()) {
+                Toast.makeText(this, "Please select a time.", Toast.LENGTH_SHORT).show()
+                return null
+            }
+            val parts = selectedTime!!.split(":")
+            if (parts.size != 2) {
+                Toast.makeText(this, "Invalid time format.", Toast.LENGTH_SHORT).show()
+                return null
+            }
+            val appointmentHour = parts[0].toIntOrNull() ?: 0
+            val appointmentMinute = parts[1].toIntOrNull() ?: 0
 
             // Validate that the selected time is within studio hours.
             // Studio hours: 9:00 AM to 7:00 PM.
@@ -201,7 +297,7 @@ class PaymentPage : AppCompatActivity() {
                 return null
             }
 
-            val appointmentTime = "$appointmentHour:$appointmentMinute"
+            val appointmentTime = selectedTime!!
 
             // Check for scheduling conflicts (stubbed—replace with your actual logic).
             if (checkScheduleConflict(appointmentDate, appointmentTime)) {
@@ -215,7 +311,7 @@ class PaymentPage : AppCompatActivity() {
                 Log.d("PaymentPage", "Building payment data with UID: $uid")
                 mapOf(
                     "uid" to uid,
-                    "totalAmount" to totalAmount,
+                    "totalAmount" to totalAmount / 100,
                     "description" to "Captured By K Package: $description",
                     "paymentType" to paymentType,
                     "extraPersonQty" to extraPersonQtyValue,
