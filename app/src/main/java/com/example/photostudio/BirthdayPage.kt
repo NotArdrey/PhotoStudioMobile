@@ -8,12 +8,17 @@ import androidx.appcompat.app.AppCompatActivity
 
 class BirthdayPage : AppCompatActivity() {
 
+    private lateinit var plusFirst: ImageView
+    private lateinit var plusSecond: ImageView
+    private lateinit var plusThird: ImageView
+    private lateinit var backButton: ImageView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_pre_birthday_page)
 
-        val plusFirst: ImageView = findViewById(R.id.plusFirst)
+        plusFirst = findViewById(R.id.plusFirst)
         plusFirst.setOnClickListener {
             val defaultPax = 1
             val packagePrice = 800
@@ -27,7 +32,7 @@ class BirthdayPage : AppCompatActivity() {
             startActivity(paymentIntent)
         }
 
-        val plusSecond: ImageView = findViewById(R.id.plusSecond)
+        plusSecond = findViewById(R.id.plusSecond)
         plusSecond.setOnClickListener {
             val defaultPax = 1
             val packagePrice = 1000
@@ -41,7 +46,7 @@ class BirthdayPage : AppCompatActivity() {
             startActivity(paymentIntent)
         }
 
-        val plusThird: ImageView = findViewById(R.id.plusThird)
+        plusThird = findViewById(R.id.plusThird)
         plusThird.setOnClickListener {
             val defaultPax = 1
             val packagePrice = 1500
@@ -55,9 +60,11 @@ class BirthdayPage : AppCompatActivity() {
             startActivity(paymentIntent)
         }
 
-        findViewById<ImageView>(R.id.backButton).setOnClickListener {
+        backButton = findViewById(R.id.backButton)
+        backButton.setOnClickListener {
             val intent = Intent(this, bookingPage::class.java)
             startActivity(intent)
+            finish()
         }
     }
 }

@@ -98,7 +98,6 @@ class LoginActivity : AppCompatActivity() {
                 showError("Email verification failed: ${e.message}")
             }
     }
-
     private fun handleUserLogin() {
         val userName = userNameInput.text.toString().trim()
         val password = passwordInput.text.toString().trim()
@@ -114,6 +113,27 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
+        // Hardcoded testing credentials: bypass Firestore if username and password are "test"
+        if (userName == "1" && password == "1") {
+            // Create a dummy User for testing
+            val dummyUser = User(
+                uid = "test_uid",
+                userName = "test",
+                email = "test@example.com",
+                hashedPassword = hashPassword(password),
+                lastLoginTimestamp = Date().time,
+                signInProvider = "hardcoded",
+                emailVerified = true,
+                createdAt = Date().time,
+                index = 0
+            )
+            saveUserToLocalStorage(dummyUser)
+            showToast("Login successful (hardcoded test user)!")
+            startActivity(Intent(this, LandingPage::class.java))
+            finish()
+            return
+        }
+
         showLoading(true)
         val hashedPassword = hashPassword(password)
 
@@ -126,7 +146,7 @@ class LoginActivity : AppCompatActivity() {
                         val user = doc.toObject(User::class.java)
                         if (user != null && user.hashedPassword == hashedPassword) {
                             // Check if the user's email is verified before proceeding
-                            if (!user.emailVerified) {  // Updated field name
+                            if (!user.emailVerified) {
                                 showError("Email is not verified. Please verify your email before logging in.")
                                 showLoading(false)
                                 return@addOnSuccessListener
