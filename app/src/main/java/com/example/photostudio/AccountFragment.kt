@@ -2,30 +2,35 @@ package com.example.photostudio
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.functions.FirebaseFunctions
 
-class AccountPage : AppCompatActivity() {
+class AccountFragment : Fragment() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var functions: FirebaseFunctions
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_account_page)
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val view = inflater.inflate(R.layout.fragment_account_page, container, false)
 
         auth = FirebaseAuth.getInstance()
         functions = FirebaseFunctions.getInstance()
 
         val currentUser = auth.currentUser
-        val editAccount = findViewById<TextView>(R.id.editAccount)
+        val editAccount = view.findViewById<TextView>(R.id.editAccount)
+        val subtitleTextView = view.findViewById<TextView>(R.id.subtitleTextView)
         val userEmail = currentUser?.email ?: ""
 
-        findViewById<TextView>(R.id.subtitleTextView).text =
-            "Welcome ${currentUser?.displayName ?: "User"}"
+        subtitleTextView.text = "Welcome ${currentUser?.displayName ?: "User"}"
 
         editAccount.setOnClickListener {
             if (userEmail.isNotEmpty()) {
@@ -34,6 +39,8 @@ class AccountPage : AppCompatActivity() {
                 showToast("No email associated with this account")
             }
         }
+
+        return view
     }
 
     private fun sendOtp(email: String) {
@@ -42,8 +49,7 @@ class AccountPage : AppCompatActivity() {
         functions.getHttpsCallable("sendOTP")
             .call(data)
             .addOnSuccessListener { result ->
-                // Use getData() to retrieve data safely
-                val resultData = result.getData() as? Map<*, *>
+                val resultData = result.getData() as? Map<*, *> // Use getData()
                 val otp = resultData?.get("otp")?.toString()
 
                 if (!otp.isNullOrEmpty()) {
@@ -54,19 +60,19 @@ class AccountPage : AppCompatActivity() {
                 }
             }
             .addOnFailureListener { e ->
-                showToast("Failed to send OTP: ${e.message}")
+                showToast("Failed to send OTP: ${e.localizedMessage}")
             }
     }
 
 
     private fun navigateToCodeVerification(email: String, otp: String) {
-        val intent = Intent(this, CodeVerificationPage::class.java)
+        val intent = Intent(requireContext(), CodeVerificationPage::class.java)
         intent.putExtra("email", email)
         intent.putExtra("otp", otp)
         startActivity(intent)
     }
 
     private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 }

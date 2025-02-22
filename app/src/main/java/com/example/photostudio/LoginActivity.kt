@@ -133,7 +133,7 @@ class LoginActivity : AppCompatActivity() {
                             }
                             saveUserToLocalStorage(user)
                             showToast("Login successful!")
-                            startActivity(Intent(this, LandingPage::class.java))
+                            startActivity(Intent(this, LandingFragment::class.java))
                             finish()
                             return@addOnSuccessListener
                         }

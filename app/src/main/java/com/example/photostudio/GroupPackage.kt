@@ -5,22 +5,23 @@ import android.os.Bundle
 import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class GroupPackage : AppCompatActivity() {
     private lateinit var addIcon: ImageView
     private lateinit var backButton: ImageView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_group_package)
 
+        // Fix Back Button
         backButton = findViewById(R.id.backButton)
-
-
         backButton.setOnClickListener {
-            val intent = Intent(this, bookingPage::class.java)
+            val intent = Intent(this, BottomNavActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            intent.putExtra("destination", "booking") // Ensure it goes to BookingFragment
             startActivity(intent)
             finish()
         }
@@ -38,6 +39,23 @@ class GroupPackage : AppCompatActivity() {
             paymentIntent.putExtra("showExtraSection", true)
             startActivity(paymentIntent)
         }
-    }
 
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
+        bottomNav.itemActiveIndicatorColor = null // Removes highlight
+
+        bottomNav.setOnItemSelectedListener { item ->
+            val intent = Intent(this, BottomNavActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP // Prevents multiple activities
+
+            when (item.itemId) {
+                R.id.nav_home -> intent.putExtra("destination", "home")
+                R.id.nav_booking -> intent.putExtra("destination", "booking")
+                R.id.nav_profile -> intent.putExtra("destination", "profile")
+            }
+
+            startActivity(intent)
+            finish()
+            false // Prevent highlight
+        }
+    }
 }

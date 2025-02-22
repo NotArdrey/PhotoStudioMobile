@@ -5,54 +5,50 @@ import android.os.Bundle
 import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
-class BirthdayPage : AppCompatActivity() {
+class PairPackageActivity : AppCompatActivity() {
+
+    private lateinit var addIcon: ImageView
+    private lateinit var backButton: ImageView
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_pre_birthday_page)
+        setContentView(R.layout.activity_pair_package_page)
 
-        setupPackageButtons()
-        setupBackButton()
-        setupBottomNav()
-    }
-
-    private fun setupPackageButtons() {
-        findViewById<ImageView>(R.id.plusFirst).setOnClickListener {
-            navigateToPayment(1, 800, "1-2 Years Old Package")
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
         }
 
-        findViewById<ImageView>(R.id.plusSecond).setOnClickListener {
-            navigateToPayment(1, 1000, "3-4 Years Old Package")
-        }
-
-        findViewById<ImageView>(R.id.plusThird).setOnClickListener {
-            navigateToPayment(1, 1500, "5-9 Years Old Package")
-        }
-    }
-
-    private fun navigateToPayment(defaultPax: Int, packagePrice: Int, description: String) {
-        val paymentIntent = Intent(this, PaymentPage::class.java).apply {
-            putExtra("defaultPax", defaultPax)
-            putExtra("description", description)
-            putExtra("packagePrice", packagePrice)
-        }
-        startActivity(paymentIntent)
-    }
-
-    private fun setupBackButton() {
-        findViewById<ImageView>(R.id.backButton).setOnClickListener {
+        // Fix Back Button
+        backButton = findViewById(R.id.backButton)
+        backButton.setOnClickListener {
             val intent = Intent(this, BottomNavActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            intent.putExtra("destination", "booking")
+            intent.putExtra("destination", "booking") // Ensure it goes to BookingFragment
             startActivity(intent)
             finish()
         }
-    }
 
-    private fun setupBottomNav() {
+        val defaultPax = 2
+        val description = "Pair Package"
+        val packagePrice = 700
+
+        addIcon = findViewById(R.id.addIcon)
+        addIcon.setOnClickListener {
+            val paymentIntent = Intent(this, PaymentPage::class.java)
+            paymentIntent.putExtra("defaultPax", defaultPax)
+            paymentIntent.putExtra("description", description)
+            paymentIntent.putExtra("packagePrice", packagePrice)
+            startActivity(paymentIntent)
+        }
+
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
         bottomNav.itemActiveIndicatorColor = null // Removes highlight
 
@@ -68,7 +64,7 @@ class BirthdayPage : AppCompatActivity() {
 
             startActivity(intent)
             finish()
-            false // Prevents highlighting
+            false // Prevent highlight
         }
     }
 }

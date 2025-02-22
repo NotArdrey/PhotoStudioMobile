@@ -29,6 +29,7 @@ import java.io.IOException
 import java.util.Base64
 import java.util.Calendar
 
+
 // Top-level utility function for encoding API keys
 fun encodeApiKey(apiKey: String): String {
     return Base64.getEncoder().encodeToString("$apiKey:".toByteArray())
@@ -40,6 +41,7 @@ class PaymentPage : AppCompatActivity() {
     private var pendingPaymentData: Map<String, Any>? = null
     private lateinit var firestore: FirebaseFirestore
     private lateinit var paymentWebView: WebView
+    private lateinit var bottomNav: BottomNavigationView
 
     // New variables for dynamic date and time
     var selectedDate: Long? = null
@@ -121,10 +123,24 @@ class PaymentPage : AppCompatActivity() {
         defaultBackdropAutoComplete.setAdapter(colorAdapter)
         extraBackdropAutoComplete.setAdapter(colorAdapter)
 
-        // Retrieve and hide the bottom navigation view.
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
-        bottomNavigationView.visibility = View.GONE
+        bottomNav = findViewById(R.id.bottomNavigationView)
 
+        // Remove highlight
+        bottomNav.itemActiveIndicatorColor = null
+
+        bottomNav.setOnItemSelectedListener { item ->
+            val intent = Intent(this, BottomNavActivity::class.java)
+
+            when (item.itemId) {
+                R.id.nav_home -> intent.putExtra("destination", "home")
+                R.id.nav_booking -> intent.putExtra("destination", "booking")
+                R.id.nav_profile -> intent.putExtra("destination", "profile")
+            }
+
+            startActivity(intent)
+            finish() // Close SoloPackagePage
+            true
+        }
         extraPersonSection.visibility = if (showExtraSection) View.VISIBLE else View.GONE
 
         // ----------------- PREPARE TIME DROPDOWN AND HELPER FUNCTION ------------------
@@ -714,5 +730,8 @@ class PaymentPage : AppCompatActivity() {
                 .addInterceptor(logging)
                 .build()
         }
+
+
     }
+
 }
