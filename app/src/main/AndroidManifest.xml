@@ -16,6 +16,8 @@
         android:theme="@style/Theme.PhotoStudio"
         tools:targetApi="31">
 
+
+
         <activity android:name=".PaymentPage"
             android:exported="true">
             <intent-filter>
@@ -38,6 +40,7 @@
             </intent-filter>
         </activity>
 
+
         <activity
             android:name=".LoginActivity"
             android:exported="true">
@@ -52,23 +55,33 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".EditAccountPage" android:exported="false" />
-        <activity android:name=".CodeVerificationPage" android:exported="false" />
-        <activity android:name=".PairPackageActivity" android:exported="true" />
-        <activity android:name=".SoloPackagePage" android:exported="true" />
-        <activity android:name=".GroupPackage" android:exported="true" />
-        <activity android:name=".BirthdayPage" android:exported="true" />
-        <activity android:name=".LandingPage" android:exported="true" />
+        <activity
+            android:name=".EditAccountPage"
+            android:exported="false" />
+        <activity
+            android:name=".CodeVerificationPage"
+            android:exported="false" />
+        <activity
+            android:name=".SoloPackagePage"
+            android:exported="true" />
+        <activity
+            android:name=".GroupPackage"
+            android:exported="true" />
 
-
-        <!-- RegisterActivity with Deep Links -->
-        <activity android:name=".RegisterActivity" android:exported="true">
+        <!-- RegisterActivity with two intent filters -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="true">
+            <!-- Deep link with custom scheme -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="yourapp" android:host="payment" />
+                <data
+                    android:scheme="yourapp"
+                    android:host="payment" />
             </intent-filter>
+            <!-- Duplicate HTTPS deep link -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -80,9 +93,13 @@
             </intent-filter>
         </activity>
 
-        <!-- Set BottomNavActivity as the Main Launcher -->
         <activity
-            android:name=".BottomNavActivity"
+            android:name=".BirthdayPage"
+            android:exported="true" />
+
+        <!-- Main launcher activity -->
+        <activity
+            android:name=".LandingPage"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.PhotoStudio">

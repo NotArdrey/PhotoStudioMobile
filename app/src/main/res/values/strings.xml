@@ -13,5 +13,47 @@
     <string name="password">Password</string>
     <string name="don_t_have_an_account_register_here">Don\'t have an account? Register here</string>
     <string name="welcome_to_ncaptured_by_k">WELCOME TO\nCAPTURED BY K</string>
+    <string name="terms_and_conditions_text">
+        Welcome to [Captured by KI]! These Terms and Conditions outline the rules and regulations for using our mobile application "Captured by KI".
+        By accessing or using the App, you agree to comply with these Terms. If you do not accept, please refrain from using the App.\n\n
+
+        1. Acceptance of Terms\n
+        By creating an account, booking, or rebooking through the App, you agree to these Terms and our Privacy Policy.\n\n
+
+        2. Account Registration\n
+        - You may create an account using an email and password or sign in through Google.\n
+        - You are responsible for maintaining the confidentiality of your account.\n
+        - We reserve the right to suspend or terminate accounts that violate our policies.\n\n
+
+        3. Booking and Rebooking\n
+        - The App allows users to book and rebook photo sessions with our studio.\n
+        - All bookings are subject to availability and confirmation.\n
+        - Cancellations and rescheduling must comply with our cancellation policy.\n\n
+
+        4. Payments and Fees\n
+        - If applicable, payment details will be provided before booking.\n
+        - Any applicable taxes or fees will be disclosed before confirming a booking.\n\n
+
+        5. User Responsibilities\n
+        - You agree to provide accurate and truthful information.\n
+        - Any misuse of the App, including fraudulent bookings, may result in account suspension.\n\n
+
+        6. Privacy Policy\n
+        - We collect and process personal data in accordance with our Privacy Policy.\n
+        - Your data will only be used to manage bookings and enhance user experience.\n\n
+
+        7. Modifications to Terms\n
+        - We reserve the right to update these Terms at any time.\n
+        - Continued use of the App after changes indicates acceptance of the updated Terms.\n\n
+
+        8. Limitation of Liability\n
+        - We are not responsible for technical issues, service disruptions, or third-party actions.\n
+        - Our liability is limited to the extent permitted by law.\n\n
+
+        9. Contact Information\n
+        - For inquiries, please contact us at [Support Email].\n\n
+
+        By using the App, you acknowledge that you have read, understood, and agree to these Terms and Conditions.
+    </string>
     <string name="group_package_description">₱1000 - A 30-minute session for 3-5 people, great for families or small groups. Includes 10 enhanced photos and 1 backdrop.</string>
 </resources>
