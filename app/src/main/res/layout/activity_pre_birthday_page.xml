@@ -11,22 +11,28 @@
         android:id="@+id/contentScrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/headerLayout">
+        app:layout_constraintTop_toBottomOf="@id/headerLayout"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
+        tools:ignore="NotSibling">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
             <!-- Header Section -->
+
+            <!-- Back Arrow placed below the header -->
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/headerLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="80dp"
                 android:background="#333333"
                 android:padding="16dp"
-                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintTop_toTopOf="parent">
 
                 <TextView
                     android:id="@+id/titleTextView"
@@ -36,10 +42,10 @@
                     android:textColor="#FFFFFF"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintEnd_toStartOf="@+id/logoImageView"
-                    app:layout_constraintHorizontal_bias="0" />
+                    app:layout_constraintHorizontal_bias="0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
                     android:id="@+id/subtitleTextView"
@@ -48,24 +54,23 @@
                     android:text="Book"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp"
-                    app:layout_constraintStart_toStartOf="@id/titleTextView"
-                    app:layout_constraintTop_toBottomOf="@id/titleTextView"
                     app:layout_constraintEnd_toStartOf="@+id/logoImageView"
-                    app:layout_constraintHorizontal_bias="0" />
+                    app:layout_constraintHorizontal_bias="0"
+                    app:layout_constraintStart_toStartOf="@id/titleTextView"
+                    app:layout_constraintTop_toBottomOf="@id/titleTextView" />
 
                 <ImageView
                     android:id="@+id/logoImageView"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:src="@drawable/logo"
-                    android:contentDescription="Logo"
                     android:background="@drawable/rounded_background"
+                    android:contentDescription="Logo"
+                    android:src="@drawable/logo"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent" />
+                    app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- Back Arrow placed below the header -->
             <ImageView
                 android:id="@+id/backButton"
                 android:layout_width="26dp"
@@ -279,8 +284,8 @@
 
                 <ImageView
                     android:id="@+id/plusSecond"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
                     android:src="@drawable/add"
                     android:layout_marginLeft="10dp"
                     android:contentDescription="Plus Icon" />
@@ -335,8 +340,8 @@
 
                 <ImageView
                     android:id="@+id/plusThird"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
                     android:src="@drawable/add"
                     android:layout_marginLeft="10dp"
                     android:contentDescription="Plus Icon" />
