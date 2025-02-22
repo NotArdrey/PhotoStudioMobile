@@ -58,6 +58,8 @@
         <activity android:name=".SoloPackagePage" android:exported="true" />
         <activity android:name=".GroupPackage" android:exported="true" />
         <activity android:name=".BirthdayPage" android:exported="true" />
+        <activity android:name=".LandingPage" android:exported="true" />
+
 
         <!-- RegisterActivity with Deep Links -->
         <activity android:name=".RegisterActivity" android:exported="true">

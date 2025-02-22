@@ -26,14 +26,25 @@ class AccountFragment : Fragment() {
         functions = FirebaseFunctions.getInstance()
 
         val currentUser = auth.currentUser
+        if (currentUser == null) {
+            showToast("Please log in to access your account")
+            // Optionally navigate to login page if the user is not logged in
+            // startActivity(Intent(requireContext(), LoginActivity::class.java))
+            return view
+        }
+
         val editAccount = view.findViewById<TextView>(R.id.editAccount)
         val subtitleTextView = view.findViewById<TextView>(R.id.subtitleTextView)
-        val userEmail = currentUser?.email ?: ""
+        val userEmail = currentUser.email ?: ""
 
-        subtitleTextView.text = "Welcome ${currentUser?.displayName ?: "User"}"
+        subtitleTextView.text = "Welcome ${currentUser.displayName ?: "User"}"
+
+        // Debugging log
+        println("Current user email: $userEmail")
 
         editAccount.setOnClickListener {
             if (userEmail.isNotEmpty()) {
+                // Send OTP logic
                 sendOtp(userEmail)
             } else {
                 showToast("No email associated with this account")
@@ -52,6 +63,9 @@ class AccountFragment : Fragment() {
                 val resultData = result.getData() as? Map<*, *> // Use getData()
                 val otp = resultData?.get("otp")?.toString()
 
+                // Debugging log
+                println("OTP generated: $otp")
+
                 if (!otp.isNullOrEmpty()) {
                     showToast("OTP sent to $email")
                     navigateToCodeVerification(email, otp)
@@ -64,8 +78,10 @@ class AccountFragment : Fragment() {
             }
     }
 
-
     private fun navigateToCodeVerification(email: String, otp: String) {
+        // Debugging log to check intent creation
+        println("Navigating to CodeVerificationPage with email: $email and OTP: $otp")
+
         val intent = Intent(requireContext(), CodeVerificationPage::class.java)
         intent.putExtra("email", email)
         intent.putExtra("otp", otp)

@@ -3,6 +3,8 @@ package com.example.photostudio
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
@@ -20,6 +22,7 @@ class RegisterActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
+    private val verificationCheckDelay: Long = 3000 // Delay in milliseconds
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,7 +38,7 @@ class RegisterActivity : AppCompatActivity() {
         val registerButton = findViewById<Button>(R.id.registerButton)
         val loginLink = findViewById<TextView>(R.id.loginLink)
 
-
+        // Set colored "Login here" link text
         val fullText = "Already have an account? Login here"
         val spannableString = SpannableString(fullText)
         val start = fullText.indexOf("Login here")
@@ -86,29 +89,30 @@ class RegisterActivity : AppCompatActivity() {
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
                     val firebaseUser = auth.currentUser
+                    // Send built-in email verification
                     firebaseUser?.sendEmailVerification()?.addOnCompleteListener { emailTask ->
                         if (emailTask.isSuccessful) {
                             val userId = firebaseUser.uid
-
                             val hashedPassword = hashPassword(password)
-
+                            // Create user object
                             val newUser = User(
                                 uid = userId,
                                 userName = userName,
                                 email = email,
                                 hashedPassword = hashedPassword
                             )
+                            // Save user details in Firestore
                             firestore.collection("Users")
                                 .document(userId)
                                 .set(newUser)
                                 .addOnSuccessListener {
                                     Toast.makeText(
                                         this,
-                                        "Registration successful! Please check your email to verify your account.",
+                                        "Registration successful! A verification email has been sent. Please verify your email.",
                                         Toast.LENGTH_LONG
                                     ).show()
-                                    startActivity(Intent(this, LoginActivity::class.java))
-                                    finish()
+                                    // Start checking for email verification automatically
+                                    startEmailVerificationCheck()
                                 }
                                 .addOnFailureListener { e ->
                                     Toast.makeText(
@@ -135,13 +139,48 @@ class RegisterActivity : AppCompatActivity() {
             }
     }
 
+    // Periodically checks if the user's email is verified.
+    private fun startEmailVerificationCheck() {
+        val handler = Handler(Looper.getMainLooper())
+        handler.postDelayed(object : Runnable {
+            override fun run() {
+                auth.currentUser?.reload()?.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        if (auth.currentUser?.isEmailVerified == true) {
+                            // Update Firestore with the verified status
+                            val userId = auth.currentUser?.uid
+                            if (userId != null) {
+                                firestore.collection("Users")
+                                    .document(userId)
+                                    .update("emailVerified", true)
+                                    .addOnSuccessListener {
+                                        Toast.makeText(this@RegisterActivity, "Email verified!", Toast.LENGTH_SHORT).show()
+                                        startActivity(Intent(this@RegisterActivity, LoginActivity::class.java))
+                                        finish()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(this@RegisterActivity, "Firestore update failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        // Optionally retry or handle the error as needed
+                                    }
+                            }
+                        } else {
+                            // Continue checking after the delay
+                            handler.postDelayed(this, verificationCheckDelay)
+                        }
+                    } else {
+                        Toast.makeText(this@RegisterActivity, "Error checking verification status.", Toast.LENGTH_SHORT).show()
+                        handler.postDelayed(this, verificationCheckDelay)
+                    }
+                }
+            }
+        }, verificationCheckDelay)
+    }
 
     private fun hashPassword(password: String): String {
         val md = MessageDigest.getInstance("SHA-256")
         val digest = md.digest(password.toByteArray())
         return digest.joinToString(separator = "") { byte -> "%02x".format(byte) }
     }
-
 
     data class User(
         val uid: String = "",

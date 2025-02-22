@@ -19,7 +19,6 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var passwordInput: EditText
     private lateinit var loginButton: Button
     private lateinit var registerLink: TextView
-
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var firestore: FirebaseFirestore
 
@@ -133,7 +132,7 @@ class LoginActivity : AppCompatActivity() {
                             }
                             saveUserToLocalStorage(user)
                             showToast("Login successful!")
-                            startActivity(Intent(this, LandingFragment::class.java))
+                            startActivity(Intent(this, LandingPage::class.java))
                             finish()
                             return@addOnSuccessListener
                         }

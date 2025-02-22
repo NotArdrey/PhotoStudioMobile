@@ -11,7 +11,7 @@ class BirthdayPage : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge()  // Optional, if you want edge-to-edge layout
         setContentView(R.layout.activity_pre_birthday_page)
 
         setupPackageButtons()
@@ -67,8 +67,8 @@ class BirthdayPage : AppCompatActivity() {
             }
 
             startActivity(intent)
-            finish()
-            false // Prevents highlighting
+            finish()  // Close the current BirthdayPage
+            true // Ensures the navigation works as expected
         }
     }
 }
