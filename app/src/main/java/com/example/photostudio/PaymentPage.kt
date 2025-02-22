@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -17,19 +18,22 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.*
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
-import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.logging.HttpLoggingInterceptor
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.text.SimpleDateFormat
 import java.util.Base64
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
-// Top-level utility function for encoding API keys
 fun encodeApiKey(apiKey: String): String {
     return Base64.getEncoder().encodeToString("$apiKey:".toByteArray())
 }
@@ -41,9 +45,41 @@ class PaymentPage : AppCompatActivity() {
     private lateinit var firestore: FirebaseFirestore
     private lateinit var paymentWebView: WebView
 
-    // New variables for dynamic date and time
     var selectedDate: Long? = null
     var selectedTime: String? = null
+    private var dateListenerRegistration: ListenerRegistration? = null
+
+    // Generate time slots, skipping the lunch break (12:00 PM to 1:00 PM)
+    fun generateTimeSlots(startHour: Int, endHour: Int, intervalMinutes: Int): List<String> {
+        val slots = mutableListOf<String>()
+        var hour = startHour
+        var minute = 0
+        while (hour < endHour || (hour == endHour && minute == 0)) {
+            // Calculate time in minutes from midnight
+            val timeInMinutes = hour * 60 + minute
+            // Skip slots between 12:00 PM (720) and 1:00 PM (780)
+            if (timeInMinutes in 720 until 780) {
+                minute += intervalMinutes
+                if (minute >= 60) {
+                    minute %= 60
+                    hour++
+                }
+                continue
+            }
+            val hour12 = if (hour % 12 == 0) 12 else hour % 12
+            val amPm = if (hour < 12) "AM" else "PM"
+            slots.add(String.format("%02d:%02d %s", hour12, minute, amPm))
+            minute += intervalMinutes
+            if (minute >= 60) {
+                minute %= 60
+                hour++
+            }
+        }
+        return slots
+    }
+
+    // Global list of time slots (excluding lunch break)
+    lateinit var allFixedTimeSlots: List<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +88,6 @@ class PaymentPage : AppCompatActivity() {
 
         firestore = FirebaseFirestore.getInstance()
 
-        // Initialize the WebView overlay (declared in XML)
         paymentWebView = findViewById(R.id.paymentWebView)
         paymentWebView.settings.javaScriptEnabled = true
         paymentWebView.webViewClient = object : WebViewClient() {
@@ -98,12 +133,10 @@ class PaymentPage : AppCompatActivity() {
             }
         }
 
-        // Retrieve intent extras (if any)
         val defaultPax = intent.getIntExtra("defaultPax", 3)
         val description = intent.getStringExtra("description")
-        val packagePriceStr = intent.getStringExtra("packagePrice")
+        val packagePrice = intent.getIntExtra("packagePrice", 0)
 
-        // UI elements from your layout
         val extraPersonSection = findViewById<LinearLayout>(R.id.extraPersonSection)
         extraPersonSection.visibility = View.GONE
 
@@ -112,56 +145,69 @@ class PaymentPage : AppCompatActivity() {
         val softCopyQtyInput = findViewById<EditText>(R.id.softCopyQty)
 
         val defaultBackdropAutoComplete = findViewById<MaterialAutoCompleteTextView>(R.id.defaultBackdropSpinner)
+        defaultBackdropAutoComplete.inputType = InputType.TYPE_NULL
+        defaultBackdropAutoComplete.setOnClickListener {
+            defaultBackdropAutoComplete.showDropDown()
+        }
+
         val extraBackdropAutoComplete = findViewById<MaterialAutoCompleteTextView>(R.id.optionalBackdropSpinner)
+        extraBackdropAutoComplete.inputType = InputType.TYPE_NULL
+        // Disable the extra backdrop spinner initially
+        extraBackdropAutoComplete.isEnabled = false
+        extraBackdropAutoComplete.setOnClickListener {
+            if (extraBackdropAutoComplete.isEnabled) {
+                extraBackdropAutoComplete.showDropDown()
+            }
+        }
+
         val defaultBackdropLayout = findViewById<TextInputLayout>(R.id.defaultBackdropDropdownLayout)
 
-        // Set adapters for backdrop dropdowns with color options.
         val colorOptions = listOf("Select Color", "Red", "Blue", "Green", "Yellow")
         val colorAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, colorOptions)
         defaultBackdropAutoComplete.setAdapter(colorAdapter)
         extraBackdropAutoComplete.setAdapter(colorAdapter)
 
-        // Retrieve and hide the bottom navigation view.
+        // Whenever user selects a default backdrop color, remove that color from the extra spinner's list
+        defaultBackdropAutoComplete.setOnItemClickListener { parent, _, position, _ ->
+            val selectedDefaultColor = parent.getItemAtPosition(position) as String
+            if (selectedDefaultColor != "Select Color") {
+                val filteredOptions = colorOptions.filter { it != selectedDefaultColor }
+                val filteredAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, filteredOptions)
+                extraBackdropAutoComplete.setAdapter(filteredAdapter)
+                extraBackdropAutoComplete.isEnabled = true
+            } else {
+                extraBackdropAutoComplete.setAdapter(colorAdapter)
+                extraBackdropAutoComplete.isEnabled = false
+            }
+        }
+
         val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
         bottomNavigationView.visibility = View.GONE
 
         extraPersonSection.visibility = if (showExtraSection) View.VISIBLE else View.GONE
 
-        // ----------------- PREPARE TIME DROPDOWN AND HELPER FUNCTION ------------------
-        // Declare the timeDropdown first so it's available in all scopes.
+        // -------------- Time/Date Picker -----------------
         val timeDropdown = findViewById<MaterialAutoCompleteTextView>(R.id.timeDropdown)
-        fun generateTimeSlots(startHour: Int, endHour: Int, intervalMinutes: Int): List<String> {
-            val slots = mutableListOf<String>()
-            var hour = startHour
-            var minute = 0
-            // Generate slots up to and including the last allowed start time (18:30)
-            while (hour < endHour || (hour == endHour && minute == 0)) {
-                slots.add(String.format("%02d:%02d", hour, minute))
-                minute += intervalMinutes
-                if (minute >= 60) {
-                    minute %= 60
-                    hour++
-                }
+        timeDropdown.inputType = InputType.TYPE_NULL
+        timeDropdown.isEnabled = false
+        timeDropdown.setOnClickListener {
+            if (timeDropdown.isEnabled) {
+                timeDropdown.showDropDown()
             }
-            return slots
         }
-        // Initially, set the dropdown adapter with the full set of fixed time slots.
-        val allFixedTimeSlots = generateTimeSlots(9, 18, 30)
+
+        allFixedTimeSlots = generateTimeSlots(9, 18, 30)
         val timeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, allFixedTimeSlots.toMutableList())
         timeDropdown.setAdapter(timeAdapter)
 
         timeDropdown.setOnItemClickListener { _, _, position, _ ->
             selectedTime = (timeDropdown.adapter as ArrayAdapter<String>).getItem(position)
+            Log.d("PaymentPage", "Selected time: $selectedTime")
         }
 
-        // ----------------- END PREPARE TIME DROPDOWN ------------------
-
-        // ----------------- DYNAMIC CALENDAR DATE AND TIME IMPLEMENTATION ------------------
-
-        // Date selection using a DatePickerDialog on the date EditText.
         val dateEditText = findViewById<TextInputEditText>(R.id.dateEditText)
         val calendar = Calendar.getInstance()
-        // Set tomorrow as the minimum date
+
         val tomorrowCalendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
         dateEditText.setOnClickListener {
             val dpd = DatePickerDialog(
@@ -171,35 +217,67 @@ class PaymentPage : AppCompatActivity() {
                     selectedDate = selectedCal.timeInMillis
                     dateEditText.setText("$dayOfMonth/${month + 1}/$year")
 
-                    // --- Firestore Query to Filter Time Slots Based on Booked Appointments ---
-                    firestore.collection("appointments")
-                        .whereEqualTo("appointmentDate", selectedDate)
-                        .get()
-                        .addOnSuccessListener { querySnapshot ->
+                    val formattedDateForQuery = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(Date(selectedDate!!))
+
+                    // Remove any existing listener to avoid duplicates
+                    dateListenerRegistration?.remove()
+
+                    // -- CHANGED HERE: we add .whereEqualTo("complete","no") to filter out 'complete=yes' --
+                    dateListenerRegistration = firestore.collection("payments")
+                        .whereEqualTo("appointmentDate", formattedDateForQuery)
+                        .whereEqualTo("complete", "no")  // Only consider docs where complete=="no"
+                        .addSnapshotListener { querySnapshot, e ->
+                            if (e != null) {
+                                Log.e("PaymentPage", "Listen failed: ${e.message}")
+                                return@addSnapshotListener
+                            }
                             val bookedTimes = mutableSetOf<String>()
-                            for (document in querySnapshot.documents) {
-                                document.getString("appointmentTime")?.let { bookedTime ->
-                                    bookedTimes.add(bookedTime)
+                            querySnapshot?.documents?.forEach { document ->
+                                document.getString("appointmentTime")?.let { rawBookedTime ->
+                                    val pattern = "(\\d+):(\\d+) (AM|PM)".toRegex()
+                                    val matchResult = pattern.matchEntire(rawBookedTime)
+                                    if (matchResult != null) {
+                                        val (h, m, meridiem) = matchResult.destructured
+                                        val hourInt = h.toInt()
+                                        val minInt = m.toInt()
+                                        val hour12 = if (hourInt % 12 == 0) 12 else hourInt % 12
+                                        val formattedBookedTime = String.format("%02d:%02d %s", hour12, minInt, meridiem)
+                                        bookedTimes.add(formattedBookedTime)
+                                    } else {
+                                        bookedTimes.add(rawBookedTime)
+                                    }
                                 }
                             }
-                            // Filter fixed time slots for available times.
+
+                            // Filter time slots based on "complete=no" booked times
                             val availableTimes = allFixedTimeSlots.filter { it !in bookedTimes }
 
-                            // Update the timeDropdown adapter with available times.
+                            if (availableTimes.isEmpty()) {
+                                Toast.makeText(
+                                    this@PaymentPage,
+                                    "This date is fully booked. Please select another date.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                // Clear the date
+                                selectedDate = null
+                                dateEditText.setText("")
+                                // Disable the time dropdown
+                                timeDropdown.isEnabled = false
+                                // Clear any previously selected time
+                                timeDropdown.setText("")
+                                return@addSnapshotListener
+                            }
+
                             (timeDropdown.adapter as ArrayAdapter<String>).clear()
                             (timeDropdown.adapter as ArrayAdapter<String>).addAll(availableTimes)
                             (timeDropdown.adapter as ArrayAdapter<String>).notifyDataSetChanged()
-
-                            // Optionally clear a previously selected time if it is no longer available.
+                            // If we had selected a time previously, but it's no longer in the available list, reset it
                             if (selectedTime != null && selectedTime !in availableTimes) {
                                 selectedTime = null
                                 timeDropdown.setText("")
                             }
+                            timeDropdown.isEnabled = true
                         }
-                        .addOnFailureListener { e ->
-                            Log.e("PaymentPage", "Failed to fetch appointments: ${e.message}")
-                        }
-                    // --- End Firestore Query ---
                 },
                 tomorrowCalendar.get(Calendar.YEAR),
                 tomorrowCalendar.get(Calendar.MONTH),
@@ -209,20 +287,25 @@ class PaymentPage : AppCompatActivity() {
             dpd.show()
         }
 
-        // ----------------- END DYNAMIC CALENDAR DATE AND TIME IMPLEMENTATION ------------------
-
-        // Function to build payment data, including time validations.
         fun buildPaymentData(paymentType: String): Map<String, Any>? {
+            val packageDescription = description ?: ""
+
             val defaultBackdropValue = defaultBackdropAutoComplete.text.toString().trim()
+
+            // Check if default color is properly selected
             if (defaultBackdropValue.isEmpty() || defaultBackdropValue == "Select Color") {
-                defaultBackdropLayout.error = "Color selection is required"
-                Log.d("PaymentPage", "Default backdrop (color) not selected")
-                return null
+                // If the package name says "Years Old Package", maybe default is allowed
+                if (packageDescription.contains("Years Old Package", ignoreCase = true)) {
+                    // fallback to "Default"
+                } else {
+                    defaultBackdropLayout.error = "Color selection is required"
+                    Log.d("PaymentPage", "Default backdrop (color) not selected")
+                    return null
+                }
             } else {
                 defaultBackdropLayout.error = null
             }
 
-            // Retrieve extra backdrop value.
             val extraBackdropValue = extraBackdropAutoComplete.text.toString().trim()
             if (extraBackdropValue.isNotEmpty() && extraBackdropValue != "Select Color") {
                 if (extraBackdropValue == defaultBackdropValue) {
@@ -238,56 +321,46 @@ class PaymentPage : AppCompatActivity() {
 
             val extraPersonAmount = defaultPax * 200
             val extraBackdropCost = if (extraBackdropValue.isNotEmpty() && extraBackdropValue != "Select Color") 200 else 0
-            val packagePriceInt = packagePriceStr?.toIntOrNull() ?: 0
-            val totalAmount = (extraPersonAmount + extraBackdropCost + packagePriceInt) * 100  // Multiply by 100 for PayMongo
+            val totalAmount = (extraPersonAmount + extraBackdropCost + packagePrice) * 100  // Multiply by 100 for PayMongo
 
             val extraPersonQtyValue = extraPersonQtyInput.text.toString().toIntOrNull() ?: 0
             val softCopyQtyValue = softCopyQtyInput.text.toString().toIntOrNull() ?: 0
 
-            // Use dynamic date from dateEditText
+            // Date/time checks
             if (selectedDate == null) {
                 Toast.makeText(this, "Please select a date.", Toast.LENGTH_SHORT).show()
                 return null
             }
             val appointmentDate = selectedDate!!
-
-            // Validate that the selected date is not in the past.
-            val currentCalendar = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            val todayStart = currentCalendar.timeInMillis
-            if (appointmentDate < todayStart) {
-                Toast.makeText(this, "You cannot select a past date.", Toast.LENGTH_SHORT).show()
-                return null
-            }
-            if (appointmentDate < todayStart + 24 * 60 * 60 * 1000) {
-                Toast.makeText(this, "Reservations must be made at least one day in advance.", Toast.LENGTH_SHORT).show()
-                return null
-            }
-
-            // Use dynamic time from timeDropdown
             if (selectedTime.isNullOrEmpty()) {
                 Toast.makeText(this, "Please select a time.", Toast.LENGTH_SHORT).show()
                 return null
             }
-            val parts = selectedTime!!.split(":")
-            if (parts.size != 2) {
+
+            // Convert selectedTime to 24-hr to do final checks
+            val timeParts = selectedTime!!.split(" ")
+            if (timeParts.size != 2) {
                 Toast.makeText(this, "Invalid time format.", Toast.LENGTH_SHORT).show()
                 return null
             }
-            val appointmentHour = parts[0].toIntOrNull() ?: 0
-            val appointmentMinute = parts[1].toIntOrNull() ?: 0
+            val hmParts = timeParts[0].split(":")
+            if (hmParts.size != 2) {
+                Toast.makeText(this, "Invalid time format.", Toast.LENGTH_SHORT).show()
+                return null
+            }
+            var hour = hmParts[0].toIntOrNull() ?: 0
+            val minute = hmParts[1].toIntOrNull() ?: 0
+            val period = timeParts[1]
+            if (period.equals("PM", ignoreCase = true) && hour != 12) {
+                hour += 12
+            }
+            if (period.equals("AM", ignoreCase = true) && hour == 12) {
+                hour = 0
+            }
 
-            // Validate that the selected time is within studio hours.
-            // Studio hours: 9:00 AM to 7:00 PM.
-            // Since each session lasts 30 minutes, the latest allowed start time is 6:30 PM.
-            val selectedTimeInMinutes = appointmentHour * 60 + appointmentMinute
-            val openingTime = 9 * 60               // 9:00 AM = 540 minutes
-            val lastAllowedStartTime = 18 * 60 + 30  // 6:30 PM = 1110 minutes
-
+            val selectedTimeInMinutes = hour * 60 + minute
+            val openingTime = 9 * 60
+            val lastAllowedStartTime = 18 * 60 + 30
             if (selectedTimeInMinutes < openingTime || selectedTimeInMinutes > lastAllowedStartTime) {
                 Toast.makeText(
                     this,
@@ -297,14 +370,7 @@ class PaymentPage : AppCompatActivity() {
                 return null
             }
 
-            val appointmentTime = selectedTime!!
-
-            // Check for scheduling conflicts (stubbed—replace with your actual logic).
-            if (checkScheduleConflict(appointmentDate, appointmentTime)) {
-                Toast.makeText(this, "There is a conflict in your schedule for the selected date/time.", Toast.LENGTH_SHORT).show()
-                return null
-            }
-
+            val formattedDate = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(Date(appointmentDate))
             val sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE)
             val uid = sharedPreferences.getString("uid", null)
             return if (uid != null) {
@@ -312,14 +378,14 @@ class PaymentPage : AppCompatActivity() {
                 mapOf(
                     "uid" to uid,
                     "totalAmount" to totalAmount / 100,
-                    "description" to "Captured By K Package: $description",
+                    "description" to "Captured By K Package: $packageDescription",
                     "paymentType" to paymentType,
                     "extraPersonQty" to extraPersonQtyValue,
                     "softCopyQty" to softCopyQtyValue,
                     "defaultBackdrop" to defaultBackdropValue,
                     "selectedExtraBackdrop" to extraBackdropValue,
-                    "appointmentDate" to appointmentDate,
-                    "appointmentTime" to appointmentTime
+                    "appointmentDate" to formattedDate,
+                    "appointmentTime" to selectedTime!!
                 )
             } else {
                 Log.e("PaymentPage", "User UID not found in SharedPreferences")
@@ -327,7 +393,6 @@ class PaymentPage : AppCompatActivity() {
             }
         }
 
-        // Payment button click listeners.
         val paymentButton: Button = findViewById(R.id.downpayment_button)
         val fullPaymentButton: Button = findViewById(R.id.full_payment_button)
 
@@ -354,7 +419,6 @@ class PaymentPage : AppCompatActivity() {
         viewModel = ViewModelProvider(this, PaymentViewModelFactory())
             .get(PaymentViewModel::class.java)
 
-        // Observe Payment Link ID and store it in pendingPaymentData.
         viewModel.paymentLinkId.observe(this) { linkId ->
             linkId?.let {
                 pendingPaymentData = pendingPaymentData?.toMutableMap()?.apply {
@@ -364,7 +428,6 @@ class PaymentPage : AppCompatActivity() {
             }
         }
 
-        // Observe the redirect URL; when available, load it in the WebView.
         viewModel.redirectUrl.observe(this) { url ->
             if (!url.isNullOrEmpty()) {
                 Log.d("PaymentPage", "Loading checkout URL in WebView: $url")
@@ -376,24 +439,25 @@ class PaymentPage : AppCompatActivity() {
             }
         }
 
-        // Observe the payment details after calling getPaymentDetails or getPaymentsForLink.
         viewModel.paymentDetails.observe(this) { json ->
             Log.d("PaymentPage", "Observed payment details: $json")
             if (json != null) {
-                val status = json
-                    .optJSONObject("data")
-                    ?.optJSONObject("attributes")
-                    ?.optString("status")
-                    ?.trim()
-                    ?.toLowerCase()
+                val attributes = json.optJSONObject("data")?.optJSONObject("attributes")
+                val status = attributes?.optString("status")?.trim()?.toLowerCase()
                 Log.d("PaymentPage", "Payment details status: $status")
                 if (status == "paid" || status == "succeeded") {
                     Toast.makeText(this, "Payment completed successfully.", Toast.LENGTH_LONG).show()
                     Log.d("PaymentPage", "Payment successful. Preparing to write paymentData to Firestore.")
                     pendingPaymentData?.let { paymentData ->
-                        Log.d("PaymentPage", "Payment data to be saved: $paymentData")
+                        val paymongoName = attributes?.optJSONObject("billing")?.optString("name") ?: ""
+                        val updatedPaymentData = paymentData.toMutableMap().apply {
+                            put("paymongoName", paymongoName)
+                            put("archive", "no")
+                            put("complete", "no")
+                        }
+                        Log.d("PaymentPage", "Payment data to be saved: $updatedPaymentData")
                         firestore.collection("payments")
-                            .add(paymentData)
+                            .add(updatedPaymentData)
                             .addOnSuccessListener { documentReference ->
                                 Log.d("PaymentPage", "Payment data saved with ID: ${documentReference.id}")
                                 pendingPaymentData = null
@@ -468,7 +532,6 @@ class PaymentPage : AppCompatActivity() {
         }
     }
 
-    // Dummy function to simulate schedule conflict checking.
     private fun checkScheduleConflict(selectedDate: Long, appointmentTime: String): Boolean {
         return false
     }
@@ -493,7 +556,6 @@ class PaymentPage : AppCompatActivity() {
         private val _paymentDetails = MutableLiveData<JSONObject?>()
         val paymentDetails: LiveData<JSONObject?> get() = _paymentDetails
 
-        // LiveData to capture the payment link ID.
         private val _paymentLinkId = MutableLiveData<String?>()
         val paymentLinkId: LiveData<String?> get() = _paymentLinkId
 
@@ -548,11 +610,11 @@ class PaymentPage : AppCompatActivity() {
                         try {
                             val jsonResponse = JSONObject(responseBody)
                             Log.d("PaymentViewModel", "Parsed JSON: $jsonResponse")
-                            // Capture the Payment Link ID.
+
                             val data = jsonResponse.optJSONObject("data")
                             val id = data?.optString("id")
                             _paymentLinkId.postValue(id)
-                            // Retrieve and post the checkout URL.
+
                             val checkoutUrl = data
                                 ?.optJSONObject("attributes")
                                 ?.optString("checkout_url")
@@ -577,18 +639,6 @@ class PaymentPage : AppCompatActivity() {
 
         fun getPaymentDetails(paymentId: String) {
             Log.d("PaymentViewModel", "getPaymentDetails called with paymentId: $paymentId")
-            if (paymentId == "test123") {
-                val simulatedResponse = JSONObject("""{
-                    "data": {
-                        "attributes": {
-                            "status": "paid"
-                        }
-                    }
-                }""")
-                Log.d("PaymentViewModel", "Simulated Payment Details Response: $simulatedResponse")
-                _paymentDetails.postValue(simulatedResponse)
-                return
-            }
 
             val request = Request.Builder()
                 .url("https://api.paymongo.com/v1/payments/$paymentId")
@@ -624,7 +674,6 @@ class PaymentPage : AppCompatActivity() {
             })
         }
 
-        // Updated getPaymentsForLink that now accepts an expectedDescription parameter.
         fun getPaymentsForLink(linkId: String, expectedDescription: String) {
             val request = Request.Builder()
                 .url("https://api.paymongo.com/v1/links/$linkId")
@@ -644,7 +693,7 @@ class PaymentPage : AppCompatActivity() {
                             val json = JSONObject(responseBody)
                             val linkData = json.getJSONObject("data")
                                 .getJSONObject("attributes")
-                            // Retrieve the reference number from the link details.
+
                             val referenceNumber = linkData.getString("reference_number")
                             Log.d("PaymentViewModel", "Link reference number: $referenceNumber")
                             Log.d("PaymentViewModel", "Fetching payments using alternative matching logic.")
@@ -659,7 +708,6 @@ class PaymentPage : AppCompatActivity() {
             })
         }
 
-        // Modified filtering logic: match using the expected description passed in.
         private fun getPaymentsForReference(referenceNumber: String, expectedDescription: String) {
             val request = Request.Builder()
                 .url("https://api.paymongo.com/v1/payments")
