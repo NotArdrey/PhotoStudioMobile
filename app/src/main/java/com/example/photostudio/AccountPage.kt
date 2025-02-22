@@ -12,7 +12,9 @@ class AccountPage : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var functions: FirebaseFunctions
-
+    val activeBookings = findViewById<TextView>(R.id.activeBookings)
+    val viewBookingHistory = findViewById<TextView>(R.id.viewBookingHistory)
+    val Terms = findViewById<TextView>(R.id.terms)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_account_page)
@@ -34,7 +36,26 @@ class AccountPage : AppCompatActivity() {
                 showToast("No email associated with this account")
             }
         }
+        // Navigate to Active Booking Page
+        activeBookings.setOnClickListener {
+            val intent = Intent(this, ActiveBookingPage::class.java)
+            startActivity(intent)
+        }
+
+        // Navigate to Booking History Page
+        viewBookingHistory.setOnClickListener {
+            val intent = Intent(this, BookingHistoryPage::class.java)
+            startActivity(intent)
+        }
+        // Navigate to Terms And Condition
+        Terms.setOnClickListener {
+            val intent = Intent(this, BookingHistoryPage::class.java)
+            startActivity(intent)
+        }
     }
+
+
+
 
     private fun sendOtp(email: String) {
         val data = hashMapOf("email" to email)
