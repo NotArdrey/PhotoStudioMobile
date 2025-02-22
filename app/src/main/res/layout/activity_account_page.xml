@@ -118,10 +118,10 @@
             android:background="@color/subtext_color" />
 
         <TextView
-            android:id="@+id/cancelRebook"
+            android:id="@+id/terms"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Cancelling and Rebooking"
+            android:text="Terms And Conditions"
             android:textSize="16sp"
             android:drawableEnd="@drawable/arrow"
             android:padding="16dp"/>
