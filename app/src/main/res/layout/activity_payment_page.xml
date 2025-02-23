@@ -56,6 +56,7 @@
             app:layout_constraintBottom_toBottomOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+
     <!-- Scrollable Content -->
     <ScrollView
         android:id="@+id/scrollView"
@@ -67,6 +68,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/contentLayout"
             android:layout_width="match_parent"
@@ -74,19 +76,32 @@
             android:paddingBottom="16dp">
 
             <!-- Guidelines -->
+
+            <ImageView
+                android:id="@+id/backButton"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/back_arrow"
+                android:layout_margin="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>
+
+
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideline_left"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:layout_constraintGuide_begin="20dp"
-                android:orientation="vertical" />
+                android:orientation="vertical"
+                app:layout_constraintGuide_begin="42dp" />
 
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideline_right"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:layout_constraintGuide_end="20dp"
-                android:orientation="vertical" />
+                android:orientation="vertical"
+                app:layout_constraintGuide_end="35dp" />
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/newCardLayout"
@@ -102,15 +117,17 @@
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="1dp"
                     android:orientation="vertical">
+
 
                     <TextView
                         android:id="@+id/AppontmentTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="15dp"
                         android:layout_gravity="center"
+                        android:layout_marginTop="15dp"
                         android:text="Appointment"
                         android:textColor="#333333"
                         android:textSize="16sp"
@@ -129,8 +146,8 @@
                             android:id="@+id/dateEditText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:cursorVisible="false" />
+                            android:cursorVisible="false"
+                            android:focusable="false" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Time Input (Dropdown) -->
@@ -278,6 +295,11 @@
                         </LinearLayout>
 
                     </LinearLayout>
+
+                    <FrameLayout
+                        android:id="@+id/fragmentContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -319,16 +341,12 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
+
+
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
     <!-- Bottom Navigation -->
-    <FrameLayout
-        android:id="@+id/fragmentContainer"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"/>
 
     <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView

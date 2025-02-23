@@ -28,7 +28,7 @@ import org.json.JSONObject
 import java.io.IOException
 import java.util.Base64
 import java.util.Calendar
-
+import android.widget.ImageView
 // Top-level utility function for encoding API keys
 fun encodeApiKey(apiKey: String): String {
     return Base64.getEncoder().encodeToString("$apiKey:".toByteArray())
@@ -40,7 +40,8 @@ class PaymentPage : AppCompatActivity() {
     private var pendingPaymentData: Map<String, Any>? = null
     private lateinit var firestore: FirebaseFirestore
     private lateinit var paymentWebView: WebView
-
+    private lateinit var bottomNav: BottomNavigationView
+    private lateinit var backButton: ImageView
     // New variables for dynamic date and time
     var selectedDate: Long? = null
     var selectedTime: String? = null
@@ -121,9 +122,30 @@ class PaymentPage : AppCompatActivity() {
         defaultBackdropAutoComplete.setAdapter(colorAdapter)
         extraBackdropAutoComplete.setAdapter(colorAdapter)
 
+
+        backButton = findViewById(R.id.backButton)
+        backButton.setOnClickListener {
+            finish()
+        }
         // Retrieve and hide the bottom navigation view.
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
-        bottomNavigationView.visibility = View.GONE
+        bottomNav = findViewById(R.id.bottomNavigationView)
+
+        // Remove highlight
+        bottomNav.itemActiveIndicatorColor = null
+
+        bottomNav.setOnItemSelectedListener { item ->
+            val intent = Intent(this, BottomNavActivity::class.java)
+
+            when (item.itemId) {
+                R.id.nav_home -> intent.putExtra("destination", "home")
+                R.id.nav_booking -> intent.putExtra("destination", "booking")
+                R.id.nav_profile -> intent.putExtra("destination", "profile")
+            }
+
+            startActivity(intent)
+            finish()
+            true
+        }
 
         extraPersonSection.visibility = if (showExtraSection) View.VISIBLE else View.GONE
 
