@@ -29,11 +29,11 @@ import java.io.IOException
 
 class RebookPage : AppCompatActivity() {
 
-    // UI elements based on your XML IDs
-    private lateinit var dateEditText: TextInputEditText         // (id: dateEditText)
-    private lateinit var timeDropdown: MaterialAutoCompleteTextView  // (id: timeDropdown)
-    private lateinit var defaultBackdropSpinner: MaterialAutoCompleteTextView  // (id: defaultBackdropSpinner)
-    private lateinit var optionalBackdropSpinner: MaterialAutoCompleteTextView // (id: optionalBackdropSpinner)
+    // UI elements
+    private lateinit var dateEditText: TextInputEditText
+    private lateinit var timeDropdown: MaterialAutoCompleteTextView
+    private lateinit var defaultBackdropSpinner: MaterialAutoCompleteTextView
+    private lateinit var optionalBackdropSpinner: MaterialAutoCompleteTextView
     private lateinit var extraPersonQtyEditText: EditText
     private lateinit var softCopyQtyEditText: EditText
     private lateinit var rebookPaymentButton: MaterialButton
@@ -44,7 +44,7 @@ class RebookPage : AppCompatActivity() {
     private lateinit var viewModel: PaymentViewModel
 
     // Booking details received from ActiveBookingPage
-    private var bookingId: String? = null  // <-- Booking document ID to update
+    private var bookingId: String? = null  // Booking document ID to update
     private var appointmentDate: String? = null
     private var appointmentTime: String? = null
     private var defaultBackdrop: String? = null
@@ -57,17 +57,13 @@ class RebookPage : AppCompatActivity() {
     private var totalAmount: Int = 0
     private var uid: String? = null
 
-    // Used later to update payment details in Firestore
-    private var pendingPaymentData: Map<String, Any>? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Use your provided XML layout for RebookPage
         setContentView(R.layout.activity_rebook_page)
 
         firestore = FirebaseFirestore.getInstance()
 
-        // Initialize UI components using the IDs from your XML layout
+        // Initialize UI components
         dateEditText = findViewById(R.id.dateEditText)
         timeDropdown = findViewById(R.id.timeDropdown)
         defaultBackdropSpinner = findViewById(R.id.defaultBackdropSpinner)
@@ -77,8 +73,7 @@ class RebookPage : AppCompatActivity() {
         rebookPaymentButton = findViewById(R.id.rebook_payment_button)
         paymentWebView = findViewById(R.id.paymentWebView)
 
-        // Retrieve booking details from intent extras passed from ActiveBookingPage,
-        // including the booking document ID ("id") for later update.
+        // Retrieve booking details from intent extras
         bookingId = intent.getStringExtra("id")
         appointmentDate = intent.getStringExtra("appointmentDate")
         appointmentTime = intent.getStringExtra("appointmentTime")
@@ -92,7 +87,7 @@ class RebookPage : AppCompatActivity() {
         totalAmount = intent.getIntExtra("totalAmount", 0)
         uid = intent.getStringExtra("uid")
 
-        // Pre-fill the UI fields with the transferred booking details
+        // Pre-fill the UI fields with booking details
         dateEditText.setText(appointmentDate ?: "")
         timeDropdown.setText(appointmentTime ?: "")
         defaultBackdropSpinner.setText(defaultBackdrop ?: "")
@@ -154,30 +149,38 @@ class RebookPage : AppCompatActivity() {
                 val status = attributes?.optString("status")?.trim()?.toLowerCase()
                 if (status == "paid" || status == "succeeded") {
                     Toast.makeText(this, "Payment completed successfully.", Toast.LENGTH_LONG).show()
-                    pendingPaymentData?.let { paymentData ->
-                        // Update payment data with additional info from the API response
-                        val paymongoNameFromResponse = attributes?.optJSONObject("billing")?.optString("name") ?: ""
-                        val updatedPaymentData = paymentData.toMutableMap().apply {
-                            put("paymongoName", paymongoNameFromResponse)
-                            put("archive", "no")
-                            put("complete", "no")
-                        }
-                        // Instead of adding a new document, update the existing booking document.
-                        if (bookingId != null) {
-                            firestore.collection("payments")
-                                .document(bookingId!!)
-                                .update(updatedPaymentData)
-                                .addOnSuccessListener {
-                                    pendingPaymentData = null
-                                    finish()
-                                }
-                                .addOnFailureListener { e ->
-                                    Toast.makeText(this, "Error updating payment data", Toast.LENGTH_SHORT).show()
-                                }
-                        } else {
-                            Log.e("RebookPage", "Booking ID is null; cannot update booking.")
-                        }
-                    } ?: Log.e("RebookPage", "No pending payment data available.")
+                    // Get additional details from the API response
+                    val paymongoNameFromResponse = attributes?.optJSONObject("billing")?.optString("name") ?: ""
+                    // Build updated payment data using the booking details from intent extras
+                    val updatedPaymentData = mapOf(
+                        "appointmentDate" to (appointmentDate ?: ""),
+                        "appointmentTime" to (appointmentTime ?: ""),
+                        "defaultBackdrop" to (defaultBackdrop ?: ""),
+                        "description" to (description ?: ""),
+                        "extraPersonQty" to extraPersonQty,
+                        "paymentType" to (paymentType ?: ""),
+                        "paymongoName" to paymongoNameFromResponse,
+                        "selectedExtraBackdrop" to (selectedExtraBackdrop ?: ""),
+                        "softCopyQty" to softCopyQty,
+                        "totalAmount" to totalAmount,
+                        "uid" to (uid ?: ""),
+                        "archive" to "no",
+                        "complete" to "no"
+                    )
+                    // Update the existing payment document identified by bookingId
+                    if (bookingId != null) {
+                        firestore.collection("payments")
+                            .document(bookingId!!)
+                            .update(updatedPaymentData)
+                            .addOnSuccessListener {
+                                finish()
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(this, "Error updating payment data", Toast.LENGTH_SHORT).show()
+                            }
+                    } else {
+                        Log.e("RebookPage", "Booking ID is null; cannot update booking.")
+                    }
                 } else {
                     Toast.makeText(this, "Payment not completed yet. Status: $status", Toast.LENGTH_LONG).show()
                 }
@@ -186,21 +189,6 @@ class RebookPage : AppCompatActivity() {
 
         // Set up the rebook payment button click to initiate the payment process.
         rebookPaymentButton.setOnClickListener {
-            // Store all booking details in pendingPaymentData (including the booking ID)
-            pendingPaymentData = mapOf(
-                "appointmentDate" to (appointmentDate ?: ""),
-                "appointmentTime" to (appointmentTime ?: ""),
-                "defaultBackdrop" to (defaultBackdrop ?: ""),
-                "description" to (description ?: ""),
-                "extraPersonQty" to extraPersonQty,
-                "paymentType" to (paymentType ?: ""),
-                "paymongoName" to (paymongoName ?: ""),
-                "selectedExtraBackdrop" to (selectedExtraBackdrop ?: ""),
-                "softCopyQty" to softCopyQty,
-                "totalAmount" to totalAmount,
-                "uid" to (uid ?: "")
-            )
-            // Initiate the payment process using totalAmount and description from the booking details.
             viewModel.createPaymentLink(totalAmount, description ?: "Rebook Payment")
         }
     }
@@ -219,10 +207,9 @@ class RebookPage : AppCompatActivity() {
             if (status != null) {
                 if (status.equals("paid", ignoreCase = true) || status.equals("succeeded", ignoreCase = true)) {
                     Toast.makeText(this, "Payment successful", Toast.LENGTH_SHORT).show()
-                    val paymentLinkId = pendingPaymentData?.get("paymentLinkId") as? String
-                    val expectedDesc = pendingPaymentData?.get("description") as? String ?: ""
+                    val paymentLinkId = uri.getQueryParameter("paymentLinkId")
                     if (paymentLinkId != null) {
-                        viewModel.getPaymentsForLink(paymentLinkId, expectedDesc)
+                        viewModel.getPaymentsForLink(paymentLinkId, description ?: "")
                     }
                 } else if (status.equals("failed", ignoreCase = true)) {
                     Toast.makeText(this, "Payment failed", Toast.LENGTH_SHORT).show()

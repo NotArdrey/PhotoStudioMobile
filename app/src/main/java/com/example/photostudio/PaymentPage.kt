@@ -35,16 +35,23 @@ import java.util.*
 class PaymentPage : AppCompatActivity() {
 
     private lateinit var viewModel: PaymentViewModel
-    private var pendingPaymentData: Map<String, Any>? = null
     private lateinit var firestore: FirebaseFirestore
     private lateinit var paymentWebView: WebView
 
+    // Optional: If you're using extras to pass downpayment and totalAmount details.
+    private var downpayment: Double? = null
+    private var totalAmount: Double? = null
 
+    // For example purposes (e.g., for time slot selection)
     lateinit var allFixedTimeSlots: List<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_payment_page)
+
+        // Retrieve downpayment and totalAmount from intent extras, if available.
+        downpayment = intent.extras?.get("downpayment") as? Double
+        totalAmount = intent.extras?.get("totalAmount") as? Double
 
         firestore = FirebaseFirestore.getInstance()
 
@@ -104,27 +111,31 @@ class PaymentPage : AppCompatActivity() {
                 val status = attributes?.optString("status")?.trim()?.toLowerCase()
                 if (status == "paid" || status == "succeeded") {
                     Toast.makeText(this, "Payment completed successfully.", Toast.LENGTH_LONG).show()
-                    pendingPaymentData?.let { paymentData ->
-                        val paymongoName = attributes?.optJSONObject("billing")?.optString("name") ?: ""
-                        val updatedPaymentData = paymentData.toMutableMap().apply {
-                            put("paymongoName", paymongoName)
-                            put("complete", "no")
-                        }
-                        Log.d("PaymentPage", "Payment data to be saved: $updatedPaymentData")
-                        firestore.collection("payments")
-                            .add(updatedPaymentData)
-                            .addOnSuccessListener { documentReference ->
-                                Log.d("PaymentPage", "Payment data saved with ID: ${documentReference.id}")
-                                pendingPaymentData = null
-                                finish()
-                            }
-                            .addOnFailureListener { e ->
-                                Log.e("PaymentPage", "Error saving payment data", e)
-                                Toast.makeText(this, "Error saving payment data", Toast.LENGTH_SHORT).show()
-                            }
-                    } ?: run {
-                        Log.e("PaymentPage", "No pendingPaymentData available. Cannot write to Firestore.")
+
+                    // Build a new payment data map from the API response.
+                    val paymongoName = attributes?.optJSONObject("billing")?.optString("name") ?: ""
+                    val paymentData = mutableMapOf<String, Any>(
+                        "paymongoName" to paymongoName,
+                        "complete" to "no"
+                    )
+
+                    // If downpayment and totalAmount were provided, calculate the remaining balance.
+                    if (downpayment != null && totalAmount != null) {
+                        val remainingBalance = totalAmount!! - downpayment!!
+                        paymentData["remainingBalance"] = remainingBalance
                     }
+
+                    Log.d("PaymentPage", "Payment data to be saved: $paymentData")
+                    firestore.collection("payments")
+                        .add(paymentData)
+                        .addOnSuccessListener { documentReference ->
+                            Log.d("PaymentPage", "Payment data saved with ID: ${documentReference.id}")
+                            finish()
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("PaymentPage", "Error saving payment data", e)
+                            Toast.makeText(this, "Error saving payment data", Toast.LENGTH_SHORT).show()
+                        }
                 } else {
                     Toast.makeText(this, "Payment not completed yet. Status: $status", Toast.LENGTH_LONG).show()
                     Log.d("PaymentPage", "Payment details indicate that payment is not successful: $json")
@@ -153,13 +164,12 @@ class PaymentPage : AppCompatActivity() {
             if (status != null) {
                 if (status.equals("paid", ignoreCase = true) || status.equals("succeeded", ignoreCase = true)) {
                     Toast.makeText(this, "Payment successful", Toast.LENGTH_SHORT).show()
-                    val paymentLinkId = pendingPaymentData?.get("paymentLinkId") as? String
-                    val expectedDesc = pendingPaymentData?.get("description") as? String ?: ""
-                    if (paymentLinkId != null) {
-                        Log.d("PaymentPage", "Fetching payments for link ID: $paymentLinkId")
-                        viewModel.getPaymentsForLink(paymentLinkId, expectedDesc)
+                    val paymentId = uri.getQueryParameter("payment_id")
+                    if (paymentId != null) {
+                        Log.d("PaymentPage", "Found Payment ID: $paymentId")
+                        viewModel.getPaymentDetails(paymentId)
                     } else {
-                        Log.e("PaymentPage", "Payment link ID not found in onNewIntent")
+                        Log.e("PaymentPage", "No payment ID found in onNewIntent")
                     }
                 } else if (status.equals("failed", ignoreCase = true)) {
                     Toast.makeText(this, "Payment failed", Toast.LENGTH_SHORT).show()
