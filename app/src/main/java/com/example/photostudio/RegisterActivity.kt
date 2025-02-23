@@ -89,18 +89,20 @@ class RegisterActivity : AppCompatActivity() {
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
                     val firebaseUser = auth.currentUser
-                    // Send built-in email verification
                     firebaseUser?.sendEmailVerification()?.addOnCompleteListener { emailTask ->
                         if (emailTask.isSuccessful) {
                             val userId = firebaseUser.uid
                             val hashedPassword = hashPassword(password)
-                            // Create user object
+
+                            // Create user object with "user" role
                             val newUser = User(
                                 uid = userId,
                                 userName = userName,
                                 email = email,
-                                hashedPassword = hashedPassword
+                                hashedPassword = hashedPassword,
+                                role = "user" // Set role as "user"
                             )
+
                             // Save user details in Firestore
                             firestore.collection("Users")
                                 .document(userId)
@@ -111,7 +113,6 @@ class RegisterActivity : AppCompatActivity() {
                                         "Registration successful! A verification email has been sent. Please verify your email.",
                                         Toast.LENGTH_LONG
                                     ).show()
-                                    // Start checking for email verification automatically
                                     startEmailVerificationCheck()
                                 }
                                 .addOnFailureListener { e ->
@@ -139,7 +140,6 @@ class RegisterActivity : AppCompatActivity() {
             }
     }
 
-
     private fun startEmailVerificationCheck() {
         val handler = Handler(Looper.getMainLooper())
         handler.postDelayed(object : Runnable {
@@ -147,7 +147,6 @@ class RegisterActivity : AppCompatActivity() {
                 auth.currentUser?.reload()?.addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         if (auth.currentUser?.isEmailVerified == true) {
-                            // Update Firestore with the verified status
                             val userId = auth.currentUser?.uid
                             if (userId != null) {
                                 firestore.collection("Users")
@@ -160,11 +159,9 @@ class RegisterActivity : AppCompatActivity() {
                                     }
                                     .addOnFailureListener { e ->
                                         Toast.makeText(this@RegisterActivity, "Firestore update failed: ${e.message}", Toast.LENGTH_SHORT).show()
-                                        // Optionally retry or handle the error as needed
                                     }
                             }
                         } else {
-                            // Continue checking after the delay
                             handler.postDelayed(this, verificationCheckDelay)
                         }
                     } else {
@@ -182,6 +179,7 @@ class RegisterActivity : AppCompatActivity() {
         return digest.joinToString(separator = "") { byte -> "%02x".format(byte) }
     }
 
+
     data class User(
         val uid: String = "",
         val userName: String = "",
@@ -191,6 +189,7 @@ class RegisterActivity : AppCompatActivity() {
         val signInProvider: String = "",
         val isEmailVerified: Boolean = false,
         val createdAt: Long = 0L,
-        val index: Int = 0
+        val index: Int = 0,
+        val role: String = "Customer"
     )
 }
