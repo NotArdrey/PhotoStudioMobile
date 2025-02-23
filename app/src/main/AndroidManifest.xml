@@ -84,7 +84,7 @@
             android:name=".RegisterActivity"
             android:exported="true">
 
-            <!-- Deep link with custom scheme -->
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -95,7 +95,7 @@
                     android:host="payment"
                     android:scheme="yourapp" />
             </intent-filter>
-            <!-- Duplicate HTTPS deep link -->
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -110,7 +110,7 @@
         </activity>
         <activity
             android:name=".BirthdayPage"
-            android:exported="true" /> <!-- Main launcher activity -->
+            android:exported="true" />
         <activity
             android:name=".LandingPage"
             android:exported="true"
@@ -123,5 +123,4 @@
             </intent-filter>
         </activity>
     </application>
-
 </manifest>
