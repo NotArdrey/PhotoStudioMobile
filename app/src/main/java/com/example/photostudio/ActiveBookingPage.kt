@@ -1,16 +1,18 @@
 package com.example.photostudio
 
-import com.example.photostudio.R
 import Booking
 import BookingAdapter
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.ImageView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
@@ -19,14 +21,21 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var bookingAdapter: BookingAdapter
+    private lateinit var bottomNav: BottomNavigationView
     private val db = FirebaseFirestore.getInstance()
-    private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()) // Ensure dates are in this format
+    private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_active_booking_page)
 
+        // ✅ Back Button Fix
+        val backButton: ImageView = findViewById(R.id.backButton)
+        backButton.setOnClickListener {
+            onBackPressedDispatcher.onBackPressed() // Use the correct method for back navigation
+        }
+
+        // ✅ RecyclerView Setup
         recyclerView = findViewById(R.id.recyclerViewBookings)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
@@ -34,17 +43,34 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
         recyclerView.adapter = bookingAdapter
 
         fetchBookings()
+
+        // ✅ Bottom Navigation Setup
+        bottomNav = findViewById(R.id.bottomNavigationView)
+
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> replaceFragment(LandingFragment())
+                R.id.nav_booking -> replaceFragment(BookingFragment())
+                R.id.nav_profile -> replaceFragment(AccountFragment())
+            }
+            true
+        }
+    }
+
+    private fun replaceFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, fragment)
+            .commit()
     }
 
     private fun fetchBookings() {
         db.collection("payments")
-            .whereEqualTo("complete", "no") // Only retrieve active bookings
+            .whereEqualTo("complete", "no") // Retrieve only active bookings
             .get()
             .addOnSuccessListener { documents ->
                 val bookingsList = mutableListOf<Booking>()
                 for (document in documents) {
                     val id = document.id
-                    // Assuming appointmentDate is stored as a string in "dd-MM-yyyy" format.
                     val appointmentDate = document.getString("appointmentDate") ?: "N/A"
                     val appointmentTime = document.getString("appointmentTime") ?: "N/A"
                     val archive = document.getString("archive") ?: "no"
@@ -58,7 +84,6 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
                     val selectedExtraBackdrop = document.getString("selectedExtraBackdrop") ?: "N/A"
                     val softCopyQty = document.getLong("softCopyQty")?.toInt() ?: 0
                     val totalAmount = document.getDouble("totalAmount")?.toInt() ?: 0
-                    // Retrieve the remaining amount (if downpayment was chosen)
                     val remainingAmount = document.getDouble("remainingAmount")?.toInt() ?: 0
                     val uid = document.getString("uid") ?: "N/A"
 
@@ -85,14 +110,16 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
                     )
                 }
 
-                bookingsList.sortBy {
+                // ✅ Sort by appointment date
+                bookingsList.sortBy { booking ->
                     try {
-                        dateFormat.parse(it.appointmentDate)
+                        dateFormat.parse(booking.appointmentDate)
                     } catch (e: Exception) {
                         null
                     }
                 }
 
+                // ✅ Update RecyclerView
                 bookingAdapter.updateBookings(bookingsList)
             }
             .addOnFailureListener { exception ->
@@ -100,7 +127,6 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
             }
     }
 
-    // When the user clicks the "Rebook" button
     override fun onRebookClicked(booking: Booking) {
         val intent = Intent(this, RebookPage::class.java).apply {
             putExtra("appointmentDate", booking.appointmentDate)
@@ -113,19 +139,18 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
             putExtra("selectedExtraBackdrop", booking.selectedExtraBackdrop)
             putExtra("softCopyQty", booking.softCopyQty)
             putExtra("totalAmount", booking.totalAmount)
-            putExtra("remainingAmount", booking.remainingAmount) // Pass remaining amount if applicable
+            putExtra("remainingAmount", booking.remainingAmount)
             putExtra("uid", booking.uid)
         }
         startActivity(intent)
     }
 
-    // When the user clicks the "Cancel" button
     override fun onCancelClicked(booking: Booking) {
         db.collection("payments").document(booking.id)
             .update("complete", "yes")
             .addOnSuccessListener {
                 Toast.makeText(this, "Booking Cancelled", Toast.LENGTH_SHORT).show()
-                fetchBookings() // Refresh the list after cancellation
+                fetchBookings() // Refresh bookings list
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Failed to cancel booking", Toast.LENGTH_SHORT).show()
