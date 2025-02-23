@@ -20,7 +20,7 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
     private lateinit var recyclerView: RecyclerView
     private lateinit var bookingAdapter: BookingAdapter
     private val db = FirebaseFirestore.getInstance()
-    private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()) // Ensure Firestore stores date in this format
+    private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()) // Ensure dates are in this format
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +58,8 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
                     val selectedExtraBackdrop = document.getString("selectedExtraBackdrop") ?: "N/A"
                     val softCopyQty = document.getLong("softCopyQty")?.toInt() ?: 0
                     val totalAmount = document.getDouble("totalAmount")?.toInt() ?: 0
+                    // Retrieve the remaining amount (if downpayment was chosen)
+                    val remainingAmount = document.getDouble("remainingAmount")?.toInt() ?: 0
                     val uid = document.getString("uid") ?: "N/A"
 
                     bookingsList.add(
@@ -77,11 +79,11 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
                             selectedExtraBackdrop = selectedExtraBackdrop,
                             softCopyQty = softCopyQty,
                             totalAmount = totalAmount,
+                            remainingAmount = remainingAmount,
                             uid = uid
                         )
                     )
                 }
-
 
                 bookingsList.sortBy {
                     try {
@@ -111,6 +113,7 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
             putExtra("selectedExtraBackdrop", booking.selectedExtraBackdrop)
             putExtra("softCopyQty", booking.softCopyQty)
             putExtra("totalAmount", booking.totalAmount)
+            putExtra("remainingAmount", booking.remainingAmount) // Pass remaining amount if applicable
             putExtra("uid", booking.uid)
         }
         startActivity(intent)

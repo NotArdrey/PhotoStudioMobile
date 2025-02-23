@@ -14,12 +14,7 @@ class TermsAndCondition : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_terms_and_condition)
 
-        // Handle system bar insets
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+
 
         // Find the Accept button
         val acceptButton = findViewById<Button>(R.id.acceptButton)

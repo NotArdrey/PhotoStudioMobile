@@ -28,17 +28,13 @@ class BookingAdapter(private var bookings: MutableList<Booking>, private val lis
         holder.bookingAmount.text = "Amount: ₱${booking.totalAmount}"
 
 
-        holder.paymentStatus.text = if (booking.paymentType == "Full Payment") {
-            "Payment Status: Fully Paid"
+        if (booking.paymentType.equals("Full Payment", ignoreCase = true)) {
+            holder.paymentStatus.text = "Payment Status: Fully Paid"
+            holder.paymentStatus.setTextColor(Color.parseColor("#388E3C"))
         } else {
-            "Payment Status: Downpayment"
+            holder.paymentStatus.text = "Payment Status: Downpayment. Remaining: ₱${booking.remainingAmount}"
+            holder.paymentStatus.setTextColor(Color.parseColor("#D32F2F"))
         }
-
-
-        holder.paymentStatus.setTextColor(
-            if (booking.paymentType == "Full Payment") Color.parseColor("#388E3C")
-            else Color.parseColor("#D32F2F")
-        )
 
         holder.rebookButton.setOnClickListener { listener.onRebookClicked(booking) }
         holder.cancelButton.setOnClickListener { listener.onCancelClicked(booking) }

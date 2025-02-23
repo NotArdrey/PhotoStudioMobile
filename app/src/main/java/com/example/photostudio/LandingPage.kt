@@ -11,17 +11,16 @@ class LandingPage : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_landing_page)
 
-        // Load the LandingFragment into the FragmentContainerView
+
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, LandingFragment())  // Attach LandingFragment as default
+                .replace(R.id.fragmentContainer, LandingFragment())
                 .commit()
         }
 
-        // Set up BottomNavigationView to handle fragment transitions
         val bottomNavigationView: BottomNavigationView = findViewById(R.id.bottomNavigationView)
 
-        // Disable item highlighting (active indicator)
+
         bottomNavigationView.itemActiveIndicatorColor = null
         bottomNavigationView.setOnItemSelectedListener { menuItem ->
             when (menuItem.itemId) {

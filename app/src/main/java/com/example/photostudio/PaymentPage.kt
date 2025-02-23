@@ -108,7 +108,6 @@ class PaymentPage : AppCompatActivity() {
                         val paymongoName = attributes?.optJSONObject("billing")?.optString("name") ?: ""
                         val updatedPaymentData = paymentData.toMutableMap().apply {
                             put("paymongoName", paymongoName)
-                            put("archive", "no")
                             put("complete", "no")
                         }
                         Log.d("PaymentPage", "Payment data to be saved: $updatedPaymentData")
