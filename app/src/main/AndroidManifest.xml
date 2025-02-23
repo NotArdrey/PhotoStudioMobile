@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.photostudio">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.PhotoStudio"
+        tools:targetApi="31">
+        <activity
+            android:name=".RebookPage"
+            android:exported="true" />
+        <activity
+            android:name=".ActiveBookingPage"
+            android:exported="true" />
+        <activity
+            android:name=".BookingHistoryPage"
+            android:exported="true" />
+        <activity
+            android:name=".TermsAndCondition"
+            android:exported="true" />
+        <activity
+            android:name=".PaymentPage"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="com.example.photostudio"
+                    android:pathPrefix="/payment"
+                    android:scheme="https" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="pm.link"
+                    android:pathPrefix="/gcash/success"
+                    android:scheme="https" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="www.yourapp.com"
+                    android:pathPrefix="/verify"
+                    android:scheme="https" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".EditAccountPage"
+            android:exported="true" />
+        <activity
+            android:name=".CodeVerificationPage"
+            android:exported="true" />
+        <activity
+            android:name=".SoloPackagePage"
+            android:exported="true" />
+        <activity
+            android:name=".GroupPackage"
+            android:exported="true" />
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="true">
+
+            <!-- Deep link with custom scheme -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="payment"
+                    android:scheme="yourapp" />
+            </intent-filter>
+            <!-- Duplicate HTTPS deep link -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="com.example.photostudio"
+                    android:path="/payment"
+                    android:scheme="https" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".BirthdayPage"
+            android:exported="true" /> <!-- Main launcher activity -->
+        <activity
+            android:name=".LandingPage"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.PhotoStudio">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
