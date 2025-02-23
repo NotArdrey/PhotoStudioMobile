@@ -14,5 +14,6 @@ data class Booking(
     val selectedExtraBackdrop: String = "",
     val softCopyQty: Int = 0,
     val totalAmount: Int = 0,
+    val remainingAmount: Int = 0,
     val uid: String = ""
 )

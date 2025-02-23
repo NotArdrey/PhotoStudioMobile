@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PhotoStudio</string>
     <string name="solo_package_subtitle">A 20-minute session for 1 person, ideal for individual portraits or headshots.</string>
@@ -5,6 +6,7 @@
     <string name="group_package_subtitle">A 30-minute session for 3-5 people, great for families or small groups. Includes 10 enhanced photos and 1 backdrop.</string>
     <string name="solo_package_description">₱500 - A 20-minute session for 1 person, ideal for individual portraits or headshots. Includes 5 enhanced photos and 1 backdrop.</string>
     <string name="pair_package_description">₱700 - A 30-minute session for 2 people, perfect for couples or friends. Includes 10 enhanced photos and 1 backdrop.</string>
+    <string name="group_package_description">₱1000 - A 30-minute session for 3-5 people, great for families or small groups. Includes 10 enhanced photos and 1 backdrop.</string>
     <string name="email">Email</string>
     <string name="continue_with_google">Continue with Google</string>
     <string name="todo">TODO</string>
@@ -14,46 +16,59 @@
     <string name="don_t_have_an_account_register_here">Don\'t have an account? Register here</string>
     <string name="welcome_to_ncaptured_by_k">WELCOME TO\nCAPTURED BY K</string>
     <string name="terms_and_conditions_text">
-        Welcome to [Captured by KI]! These Terms and Conditions outline the rules and regulations for using our mobile application "Captured by KI".
-        By accessing or using the App, you agree to comply with these Terms. If you do not accept, please refrain from using the App.\n\n
+Studio Shoot Appointment Guidelines:
+Studio shoot is strictly by appointment only.
+We are open from 9am to 6pm.
+We are located at 102 Purok 2, Batang, Ligao City.
+Each booked slot will have unlimited shots but the number of photos to be released depends on your package.
+Preparation / Doing make-up in the studio IS NOT ALLOWED.
+Choosing of photos shall only be within 20 minutes.
+The soft copy of the enhanced photos in the packages shall be given through a Google Drive link.
+NO PRINT OUT.
+Photos shall be released to the client and posted on our FB page WITHIN THE DAY OR THE DAY AFTER EACH SESSION.
+Additional photo to be released within the day or the day after each session is 50php per shot.
 
-        1. Acceptance of Terms\n
-        By creating an account, booking, or rebooking through the App, you agree to these Terms and our Privacy Policy.\n\n
+-----------------------------------------------------------------
 
-        2. Account Registration\n
-        - You may create an account using an email and password or sign in through Google.\n
-        - You are responsible for maintaining the confidentiality of your account.\n
-        - We reserve the right to suspend or terminate accounts that violate our policies.\n\n
+Welcome to [Captured by KI]! These Terms and Conditions outline the rules and regulations for using our mobile application "Captured by KI".
+By accessing or using the App, you agree to comply with these Terms. If you do not accept, please refrain from using the App.
 
-        3. Booking and Rebooking\n
-        - The App allows users to book and rebook photo sessions with our studio.\n
-        - All bookings are subject to availability and confirmation.\n
-        - Cancellations and rescheduling must comply with our cancellation policy.\n\n
+1. Acceptance of Terms
+By creating an account, booking, or rebooking through the App, you agree to these Terms and our Privacy Policy.
 
-        4. Payments and Fees\n
-        - If applicable, payment details will be provided before booking.\n
-        - Any applicable taxes or fees will be disclosed before confirming a booking.\n\n
+2. Account Registration
+- You may create an account using an email and password or sign in through Google.
+- You are responsible for maintaining the confidentiality of your account.
+- We reserve the right to suspend or terminate accounts that violate our policies.
 
-        5. User Responsibilities\n
-        - You agree to provide accurate and truthful information.\n
-        - Any misuse of the App, including fraudulent bookings, may result in account suspension.\n\n
+3. Booking and Rebooking
+- The App allows users to book and rebook photo sessions with our studio.
+- All bookings are subject to availability and confirmation.
+- Cancellations and rescheduling must comply with our cancellation policy.
 
-        6. Privacy Policy\n
-        - We collect and process personal data in accordance with our Privacy Policy.\n
-        - Your data will only be used to manage bookings and enhance user experience.\n\n
+4. Payments and Fees
+- If applicable, payment details will be provided before booking.
+- Any applicable taxes or fees will be disclosed before confirming a booking.
 
-        7. Modifications to Terms\n
-        - We reserve the right to update these Terms at any time.\n
-        - Continued use of the App after changes indicates acceptance of the updated Terms.\n\n
+5. User Responsibilities
+- You agree to provide accurate and truthful information.
+- Any misuse of the App, including fraudulent bookings, may result in account suspension.
 
-        8. Limitation of Liability\n
-        - We are not responsible for technical issues, service disruptions, or third-party actions.\n
-        - Our liability is limited to the extent permitted by law.\n\n
+6. Privacy Policy
+- We collect and process personal data in accordance with our Privacy Policy.
+- Your data will only be used to manage bookings and enhance user experience.
 
-        9. Contact Information\n
-        - For inquiries, please contact us at [Support Email].\n\n
+7. Modifications to Terms
+- We reserve the right to update these Terms at any time.
+- Continued use of the App after changes indicates acceptance of the updated Terms.
 
-        By using the App, you acknowledge that you have read, understood, and agree to these Terms and Conditions.
+8. Limitation of Liability
+- We are not responsible for technical issues, service disruptions, or third-party actions.
+- Our liability is limited to the extent permitted by law.
+
+9. Contact Information
+- For inquiries, please contact us at [Support Email].
+
+By using the App, you acknowledge that you have read, understood, and agree to these Terms and Conditions.
     </string>
-    <string name="group_package_description">₱1000 - A 30-minute session for 3-5 people, great for families or small groups. Includes 10 enhanced photos and 1 backdrop.</string>
 </resources>
