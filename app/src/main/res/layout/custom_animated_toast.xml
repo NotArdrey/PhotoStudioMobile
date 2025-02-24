@@ -1,0 +1,26 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="8dp"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:elevation="6dp">
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/toastAnimation"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="false"
+        app:lottie_rawRes="@raw/success" />
+
+    <TextView
+        android:id="@+id/toastMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Custom Toast"
+        android:textColor="@color/black"
+        android:textSize="14sp"
+        android:padding="8dp" />
+</LinearLayout>
