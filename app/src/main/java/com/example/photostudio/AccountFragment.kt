@@ -30,7 +30,7 @@ import javax.mail.Transport
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
 
-// A helper class to send email using
+// A helper class to send email using JavaMail API
 class MailSender(private val username: String, private val password: String) {
 
     private val session: Session
