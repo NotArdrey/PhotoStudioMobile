@@ -6,11 +6,14 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -29,7 +32,6 @@ import java.io.IOException
 
 class RebookPage : AppCompatActivity() {
 
-    // UI elements
     private lateinit var dateEditText: TextInputEditText
     private lateinit var timeDropdown: MaterialAutoCompleteTextView
     private lateinit var defaultBackdropSpinner: MaterialAutoCompleteTextView
@@ -39,19 +41,22 @@ class RebookPage : AppCompatActivity() {
     private lateinit var rebookPaymentButton: MaterialButton
     private lateinit var paymentWebView: WebView
 
-    // Firestore & Payment
+    // Added: Package selection spinner for changing the package during rebooking
+    private lateinit var packageSpinner: MaterialAutoCompleteTextView
+
     private lateinit var firestore: FirebaseFirestore
     private lateinit var viewModel: PaymentViewModel
 
-    // Booking details received from ActiveBookingPage
-    private var bookingId: String? = null  // Booking document ID to update
+    private var bookingId: String? = null
     private var appointmentDate: String? = null
     private var appointmentTime: String? = null
     private var defaultBackdrop: String? = null
     private var selectedExtraBackdrop: String? = null
     private var extraPersonQty: Int = 0
     private var softCopyQty: Int = 0
-    private var description: String? = null
+
+    // Changed: packageType can now be updated by user selection
+    private var packageType: String? = null
     private var paymentType: String? = null
     private var paymongoName: String? = null
     private var totalAmount: Int = 0
@@ -63,7 +68,6 @@ class RebookPage : AppCompatActivity() {
 
         firestore = FirebaseFirestore.getInstance()
 
-        // Initialize UI components
         dateEditText = findViewById(R.id.dateEditText)
         timeDropdown = findViewById(R.id.timeDropdown)
         defaultBackdropSpinner = findViewById(R.id.defaultBackdropSpinner)
@@ -72,13 +76,15 @@ class RebookPage : AppCompatActivity() {
         softCopyQtyEditText = findViewById(R.id.softCopyQty)
         rebookPaymentButton = findViewById(R.id.rebook_payment_button)
         paymentWebView = findViewById(R.id.paymentWebView)
+        // Initialize the new package spinner
+        packageSpinner = findViewById(R.id.packageSpinner)
 
-        // Retrieve booking details from intent extras
         bookingId = intent.getStringExtra("id")
         appointmentDate = intent.getStringExtra("appointmentDate")
         appointmentTime = intent.getStringExtra("appointmentTime")
         defaultBackdrop = intent.getStringExtra("defaultBackdrop")
-        description = intent.getStringExtra("description")
+        // Retrieve packageType from intent extras (if available)
+        packageType = intent.getStringExtra("packageType")
         extraPersonQty = intent.getIntExtra("extraPersonQty", 0)
         paymentType = intent.getStringExtra("paymentType")
         paymongoName = intent.getStringExtra("paymongoName")
@@ -87,13 +93,91 @@ class RebookPage : AppCompatActivity() {
         totalAmount = intent.getIntExtra("totalAmount", 0)
         uid = intent.getStringExtra("uid")
 
-        // Pre-fill the UI fields with booking details
         dateEditText.setText(appointmentDate ?: "")
         timeDropdown.setText(appointmentTime ?: "")
         defaultBackdropSpinner.setText(defaultBackdrop ?: "")
         optionalBackdropSpinner.setText(selectedExtraBackdrop ?: "")
         extraPersonQtyEditText.setText(extraPersonQty.toString())
         softCopyQtyEditText.setText(softCopyQty.toString())
+
+        // Setup package spinner with sample package options
+        val packageOptions = listOf("Basic", "Premium", "Deluxe")
+        val packageAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, packageOptions)
+        packageSpinner.setAdapter(packageAdapter)
+        // Set the current selection if packageType was provided via intent
+        packageType?.let {
+            val index = packageOptions.indexOf(it)
+            if (index >= 0) {
+                packageSpinner.setText(it, false)
+            }
+        }
+        // Update packageType when user selects a new package
+        packageSpinner.setOnItemClickListener { parent, view, position, id ->
+            packageType = parent.getItemAtPosition(position).toString()
+        }
+
+        timeDropdown.isEnabled = false
+
+        // Listen for changes in the date field to enable time selection and filter out booked times.
+        dateEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                val selectedDate = s.toString()
+                if (selectedDate.isNotEmpty()) {
+                    // Reset the time field whenever the date changes.
+                    timeDropdown.setText("")
+                    timeDropdown.isEnabled = true
+
+                    // Query Firestore for any bookings with this date.
+                    firestore.collection("bookings")
+                        .whereEqualTo("appointmentDate", selectedDate)
+                        .get()
+                        .addOnSuccessListener { querySnapshot ->
+                            // Collect times that are already booked.
+                            val bookedTimes = querySnapshot.documents.mapNotNull { it.getString("appointmentTime") }
+                            // Update the timeDropdown adapter to remove booked times.
+                            val currentAdapter = timeDropdown.adapter as? ArrayAdapter<String>
+                            currentAdapter?.let {
+                                val availableTimes = (0 until it.count)
+                                    .map { index -> it.getItem(index).toString() }
+                                    .filter { time -> !bookedTimes.contains(time) }
+                                val newAdapter = ArrayAdapter(this@RebookPage,
+                                    android.R.layout.simple_dropdown_item_1line, availableTimes)
+                                timeDropdown.setAdapter(newAdapter)
+                            }
+                        }
+                } else {
+                    timeDropdown.isEnabled = false
+                    timeDropdown.setText("")
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+        // --- End date and time selection changes ---
+
+        // --- Prevent selecting the same backdrop in both spinners ---
+        defaultBackdropSpinner.setOnItemClickListener { parent, view, position, id ->
+            val selectedBackdrop = parent.getItemAtPosition(position).toString()
+            val optionalAdapter = optionalBackdropSpinner.adapter as? ArrayAdapter<String>
+            optionalAdapter?.let {
+                val options = (0 until it.count).map { i -> it.getItem(i).toString() }
+                val filteredOptions = options.filter { option -> option != selectedBackdrop }
+                val newAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, filteredOptions)
+                optionalBackdropSpinner.setAdapter(newAdapter)
+            }
+        }
+
+        optionalBackdropSpinner.setOnItemClickListener { parent, view, position, id ->
+            val selectedExtra = parent.getItemAtPosition(position).toString()
+            val defaultAdapter = defaultBackdropSpinner.adapter as? ArrayAdapter<String>
+            defaultAdapter?.let {
+                val options = (0 until it.count).map { i -> it.getItem(i).toString() }
+                val filteredOptions = options.filter { option -> option != selectedExtra }
+                val newAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, filteredOptions)
+                defaultBackdropSpinner.setAdapter(newAdapter)
+            }
+        }
+        // --- End backdrop selection changes ---
 
         // Initialize the PaymentViewModel
         viewModel = ViewModelProvider(this, PaymentViewModelFactory())
@@ -156,7 +240,7 @@ class RebookPage : AppCompatActivity() {
                         "appointmentDate" to (appointmentDate ?: ""),
                         "appointmentTime" to (appointmentTime ?: ""),
                         "defaultBackdrop" to (defaultBackdrop ?: ""),
-                        "description" to (description ?: ""),
+                        "packageType" to (packageType ?: ""),  // Updated packageType field
                         "extraPersonQty" to extraPersonQty,
                         "paymentType" to (paymentType ?: ""),
                         "paymongoName" to paymongoNameFromResponse,
@@ -188,8 +272,9 @@ class RebookPage : AppCompatActivity() {
         }
 
         // Set up the rebook payment button click to initiate the payment process.
+        // Pass the (possibly updated) packageType to createPaymentLink.
         rebookPaymentButton.setOnClickListener {
-            viewModel.createPaymentLink(totalAmount, description ?: "Rebook Payment")
+            viewModel.createPaymentLink(totalAmount, packageType ?: "Rebook Payment")
         }
     }
 
@@ -209,7 +294,7 @@ class RebookPage : AppCompatActivity() {
                     Toast.makeText(this, "Payment successful", Toast.LENGTH_SHORT).show()
                     val paymentLinkId = uri.getQueryParameter("paymentLinkId")
                     if (paymentLinkId != null) {
-                        viewModel.getPaymentsForLink(paymentLinkId, description ?: "")
+                        viewModel.getPaymentsForLink(paymentLinkId, packageType ?: "")
                     }
                 } else if (status.equals("failed", ignoreCase = true)) {
                     Toast.makeText(this, "Payment failed", Toast.LENGTH_SHORT).show()
@@ -253,14 +338,15 @@ class RebookPage : AppCompatActivity() {
 
         private val apiClient = createApiClient()
 
-        fun createPaymentLink(amount: Int, description: String) {
+        fun createPaymentLink(amount: Int, packageType: String) {
             val convertedAmount = amount * 100
             val requestBody = JSONObject().apply {
                 put("data", JSONObject().apply {
                     put("attributes", JSONObject().apply {
                         put("amount", convertedAmount)
                         put("currency", "PHP")
-                        put("description", description)
+                        // Passing the (possibly updated) packageType value as the description.
+                        put("description", packageType)
                         put("payment_method_types", JSONArray().apply {
                             put("gcash")
                             put("card")
@@ -335,7 +421,7 @@ class RebookPage : AppCompatActivity() {
             })
         }
 
-        fun getPaymentsForLink(linkId: String, expectedDescription: String) {
+        fun getPaymentsForLink(linkId: String, expectedPackageType: String) {
             val request = Request.Builder()
                 .url("https://api.paymongo.com/v1/links/$linkId")
                 .get()
@@ -354,7 +440,7 @@ class RebookPage : AppCompatActivity() {
                             val json = JSONObject(responseBody)
                             val linkData = json.getJSONObject("data").getJSONObject("attributes")
                             val referenceNumber = linkData.getString("reference_number")
-                            getPaymentsForReference(referenceNumber, expectedDescription)
+                            getPaymentsForReference(referenceNumber, expectedPackageType)
                         } catch (e: Exception) {
                             Log.e("PaymentViewModel", "Error parsing link details: ${e.localizedMessage}")
                         }
@@ -365,7 +451,7 @@ class RebookPage : AppCompatActivity() {
             })
         }
 
-        private fun getPaymentsForReference(referenceNumber: String, expectedDescription: String) {
+        private fun getPaymentsForReference(referenceNumber: String, expectedPackageType: String) {
             val request = Request.Builder()
                 .url("https://api.paymongo.com/v1/payments")
                 .get()
@@ -390,7 +476,7 @@ class RebookPage : AppCompatActivity() {
                                 val status = attributes.optString("status", "").trim().toLowerCase()
                                 val paymentDescription = attributes.optString("description", "")
                                 if ((status == "paid" || status == "succeeded") &&
-                                    paymentDescription.contains(expectedDescription, ignoreCase = true)
+                                    paymentDescription.contains(expectedPackageType, ignoreCase = true)
                                 ) {
                                     foundPaymentId = paymentObj.getString("id")
                                     break

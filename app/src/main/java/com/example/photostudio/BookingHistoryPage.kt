@@ -54,7 +54,7 @@ class BookingHistoryPage : AppCompatActivity() {
                     bookingList.clear() // Clear existing data
 
                     for (document in documents) {
-                        val packageName = document.getString("description") ?: "Unknown Package"
+                        val packageName = document.getString("packageType") ?: "Unknown Package"
                         val date = document.getLong("appointmentDate")?.let { convertTimestampToDate(it) } ?: "No Date"
                         val price = document.getDouble("totalAmount")?.toString() ?: "0"
 
@@ -71,7 +71,7 @@ class BookingHistoryPage : AppCompatActivity() {
 
     private fun filterBookings(query: String) {
         val filteredList = bookingList.filter {
-            it.description.contains(query, ignoreCase = true) || it.appointmentDate.contains(query, ignoreCase = true)
+            it.packageType.contains(query, ignoreCase = true) || it.appointmentDate.contains(query, ignoreCase = true)
         }
         bookingAdapter.updateBookings(filteredList)
     }

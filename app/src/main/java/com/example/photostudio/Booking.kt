@@ -6,7 +6,7 @@ data class Booking(
     val complete: String = "no",
     val defaultBackdrop: String = "",
     val imageUrl: String = "",
-    val description: String = "",
+    val packageType: String = "",
     val extraPersonQty: Int = 0,
     val paymentLinkId: String = "",
     val paymentType: String = "",

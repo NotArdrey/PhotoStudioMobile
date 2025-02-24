@@ -78,4 +78,17 @@
         app:itemTextColor="@color/bottom_nav_content_color"
         app:menu="@menu/bottom_nav_menu"
         android:elevation="8dp"/>
+
+
+    <WebView
+        android:id="@+id/paymentWebView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        android:visibility="gone"
+        android:background="@android:color/white"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>
