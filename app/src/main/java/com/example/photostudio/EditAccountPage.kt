@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.EmailAuthProvider
@@ -33,6 +34,7 @@ class EditAccountPage : AppCompatActivity() {
         val confirmNewPasswordInput = findViewById<EditText>(R.id.confirmNewPasswordInput)
         val confirmButton = findViewById<Button>(R.id.confirmButton)
         val cancelButton = findViewById<Button>(R.id.cancelButton)
+        val backButton = findViewById<ImageView>(R.id.backButton) // Back button
 
         emailInput.isEnabled = false
 
@@ -148,6 +150,11 @@ class EditAccountPage : AppCompatActivity() {
         cancelButton.setOnClickListener {
             finish()
         }
+
+        // Back Button Functionality
+        backButton.setOnClickListener {
+            finish() // Closes the activity and returns to the previous one
+        }
     }
 
     // Helper function to hash passwords using SHA-256.
@@ -160,7 +167,7 @@ class EditAccountPage : AppCompatActivity() {
 
     // Redirect to the account screen (replace AccountFragment with your actual destination Activity or Fragment).
     private fun redirectToAccountActivity() {
-        val intent = Intent(this, AccountFragment::class.java)
+        val intent = Intent(this, AccountFragment::class.java) // Changed to AccountActivity
         startActivity(intent)
         finish()
     }

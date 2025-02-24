@@ -73,20 +73,31 @@
             android:layout_height="wrap_content"
             android:paddingBottom="16dp">
 
+            <ImageView
+                android:id="@+id/backButton"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/back_arrow"
+                android:layout_margin="10dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>
+
             <!-- Guidelines -->
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideline_left"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:layout_constraintGuide_begin="20dp"
-                android:orientation="vertical" />
+                android:orientation="vertical"
+                app:layout_constraintGuide_begin="43dp" />
 
             <androidx.constraintlayout.widget.Guideline
                 android:id="@+id/guideline_right"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:layout_constraintGuide_end="20dp"
-                android:orientation="vertical" />
+                android:orientation="vertical"
+                app:layout_constraintGuide_end="42dp" />
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/newCardLayout"
@@ -100,7 +111,7 @@
                 app:layout_constraintEnd_toEndOf="@id/guideline_right">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="328dp"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
@@ -108,8 +119,8 @@
                         android:id="@+id/AppontmentTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="15dp"
                         android:layout_gravity="center"
+                        android:layout_marginTop="15dp"
                         android:text="Appointment"
                         android:textColor="#333333"
                         android:textSize="16sp"
@@ -121,18 +132,18 @@
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:hint="Select Date"
                         android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
                         android:paddingTop="16dp"
-                        android:hint="Select Date">
+                        android:paddingEnd="16dp">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/dateEditText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:cursorVisible="false"
                             android:focusable="false"
-                            android:padding="10dp"
-                            android:cursorVisible="false" />
+                            android:padding="10dp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
 
@@ -142,7 +153,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        android:hint="Select Time"/>
+                        android:hint="Select Time" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/timeDropdownLayout"
@@ -150,17 +161,17 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:paddingStart="16dp"
+                        android:paddingTop="0dp"
                         android:paddingEnd="16dp"
-                        android:paddingBottom="16dp"
-                        android:paddingTop="0dp">
+                        android:paddingBottom="16dp">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/timeDropdown"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:padding="10dp"
+                            android:dropDownHeight="300dp"
                             android:hint="Select Time"
-                            android:dropDownHeight="300dp"/>
+                            android:padding="10dp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                 </LinearLayout>
