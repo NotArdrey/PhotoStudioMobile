@@ -29,7 +29,7 @@ class CodeVerificationPage : AppCompatActivity() {
         val codeInput = findViewById<EditText>(R.id.codeInput)
         val continueButton = findViewById<Button>(R.id.continueButton)
         val resendCode = findViewById<TextView>(R.id.resendCode)
-        val backButton = findViewById<ImageView>(R.id.BackImage)
+        val backButton = findViewById<ImageView>(R.id.backButton)
 
         // Verify OTP
         continueButton.setOnClickListener {

@@ -115,7 +115,7 @@ class LoginActivity : AppCompatActivity() {
             )
             saveUserToLocalStorage(dummyUser)
             showToast("Login successful (hardcoded test user)!")
-            startActivity(Intent(this, LandingPage::class.java))
+            startActivity(Intent(this, SplashScreenActivity::class.java))
             finish()
             return
         }
@@ -138,7 +138,7 @@ class LoginActivity : AppCompatActivity() {
                             }
                             saveUserToLocalStorage(user)
                             showToast("Login successful!")
-                            startActivity(Intent(this, LandingPage::class.java))
+                            startActivity(Intent(this, SplashScreenActivity::class.java))
                             finish()
                             return@addOnSuccessListener
                         }
