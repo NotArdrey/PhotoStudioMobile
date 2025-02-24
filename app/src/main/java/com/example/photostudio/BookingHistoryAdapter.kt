@@ -27,7 +27,7 @@ class BookingHistoryAdapter(private var bookingList: List<Booking>) :
 
     override fun onBindViewHolder(holder: BookingViewHolder, position: Int) {
         val booking = bookingList[position]
-        holder.packageName.text = "Package: ${booking.description}"
+        holder.packageName.text = "Package: ${booking.packageType}"
         holder.bookingDate.text = "Date: ${booking.appointmentDate}"
         holder.bookingAmount.text = "Amount: ₱${booking.totalAmount
         }"

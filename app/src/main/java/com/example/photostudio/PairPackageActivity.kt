@@ -37,24 +37,21 @@ class PairPackageActivity : AppCompatActivity() {
             finish()
         }
 
-        // Package Details
-        val defaultPax = 2
-        val description = "Pair Package"
-        val packagePrice = 700
+
 
         // Add Icon Setup for navigating to PaymentPage
         addIcon = findViewById(R.id.addIcon)
         addIcon.setOnClickListener {
             val paymentIntent = Intent(this, PaymentPage::class.java)
-            paymentIntent.putExtra("defaultPax", defaultPax)
-            paymentIntent.putExtra("description", description)
-            paymentIntent.putExtra("packagePrice", packagePrice)
+            paymentIntent.putExtra("defaultPax", 0)
+            paymentIntent.putExtra("packageType", "Pair Package")
+            paymentIntent.putExtra("packagePrice",  700)
             startActivity(paymentIntent)
         }
 
-        // Bottom Navigation Setup
+
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
-        bottomNav.itemActiveIndicatorColor = null // Removes highlight on items
+        bottomNav.itemActiveIndicatorColor = null
 
         bottomNav.setOnItemSelectedListener { item ->
             val intent = Intent(this, BottomNavActivity::class.java)

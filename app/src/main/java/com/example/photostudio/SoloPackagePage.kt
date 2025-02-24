@@ -24,8 +24,8 @@ class SoloPackagePage : AppCompatActivity() {
         addIcon = findViewById(R.id.addIcon)
         addIcon.setOnClickListener {
             val intent = Intent(this, PaymentPage::class.java)
-            intent.putExtra("defaultPax", 1)
-            intent.putExtra("description", "Solo Package")
+            intent.putExtra("defaultPax", 0)
+            intent.putExtra("packageType", "Solo Package")
             intent.putExtra("packagePrice", 500)
             startActivity(intent)
         }

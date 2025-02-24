@@ -17,27 +17,25 @@ class GroupPackage : AppCompatActivity() {
         setContentView(R.layout.activity_group_package)
 
         backButton = findViewById(R.id.backButton)
-
-
         backButton.setOnClickListener {
-            val intent = Intent(this, LandingPage::class.java)
+            val intent = Intent(this, BottomNavActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            intent.putExtra("destination", "booking")
             startActivity(intent)
             finish()
         }
 
-        val defaultPax = 3
-        val description = "Group Package"
-        val packagePrice = 1000
-
         addIcon = findViewById(R.id.addIcon)
         addIcon.setOnClickListener {
             val paymentIntent = Intent(this, PaymentPage::class.java)
-            paymentIntent.putExtra("defaultPax", defaultPax)
-            paymentIntent.putExtra("description", description)
-            paymentIntent.putExtra("packagePrice", packagePrice)
+            paymentIntent.putExtra("extraPersonCost", 200)
+
+            paymentIntent.putExtra("packageType", "Group Package")
+            paymentIntent.putExtra("packagePrice", 1000)
             paymentIntent.putExtra("showExtraSection", true)
             startActivity(paymentIntent)
         }
+
     }
 
 }

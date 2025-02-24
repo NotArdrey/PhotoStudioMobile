@@ -5,25 +5,27 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="10dp"
-    app:cardCornerRadius="5dp"
-    app:cardElevation="5dp">
+    app:cardCornerRadius="8dp"
+    app:cardElevation="4dp"
+    android:foreground="?android:attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:focusable="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="15dp">
+        android:padding="16dp">
 
-        <!-- Package Image -->
         <ImageView
             android:id="@+id/packageImage"
             android:layout_width="80dp"
-            android:layout_height="142dp"
-            android:layout_marginEnd="10dp"
+            android:layout_height="match_parent"
+            android:adjustViewBounds="true"
+            android:layout_marginEnd="12dp"
             android:scaleType="centerCrop"
             android:src="@drawable/solopackageimg" />
 
-        <!-- Package Details -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -37,7 +39,8 @@
                 android:text="Package: Solo"
                 android:textSize="16sp"
                 android:textColor="@android:color/black"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:paddingBottom="4dp" />
 
             <TextView
                 android:id="@+id/bookingDate"
@@ -45,16 +48,17 @@
                 android:layout_height="wrap_content"
                 android:text="Date: 00-00-0000"
                 android:textSize="14sp"
-                android:textColor="@android:color/darker_gray"/>
+                android:textColor="@android:color/darker_gray"
+                android:paddingBottom="2dp" />
 
-            <!-- Appointment Time -->
             <TextView
                 android:id="@+id/appointmentTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Time: 00:00"
                 android:textSize="14sp"
-                android:textColor="@android:color/darker_gray"/>
+                android:textColor="@android:color/darker_gray"
+                android:paddingBottom="2dp" />
 
             <TextView
                 android:id="@+id/bookingAmount"
@@ -62,9 +66,9 @@
                 android:layout_height="wrap_content"
                 android:text="Amount: ₱500"
                 android:textSize="14sp"
-                android:textColor="@android:color/darker_gray"/>
+                android:textColor="@android:color/darker_gray"
+                android:paddingBottom="4dp" />
 
-            <!-- Payment Status -->
             <TextView
                 android:id="@+id/paymentStatus"
                 android:layout_width="wrap_content"
@@ -72,9 +76,9 @@
                 android:text="Payment Status:"
                 android:textSize="14sp"
                 android:textColor="@android:color/black"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:paddingBottom="2dp" />
 
-            <!-- Remaining Balance (Only visible if downpayment) -->
             <TextView
                 android:id="@+id/remainingBalance"
                 android:layout_width="wrap_content"
@@ -82,35 +86,52 @@
                 android:text="Remaining Balance: ₱0"
                 android:textSize="14sp"
                 android:textColor="@android:color/holo_red_dark"
-                android:visibility="gone"/> <!-- Initially hidden -->
+                android:visibility="gone" />
         </LinearLayout>
 
-        <!-- Buttons placed in a vertical container -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:layout_marginStart="8dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/rebookButton"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 app:cornerRadius="10dp"
                 android:backgroundTint="#333333"
                 android:text="Rebook"
                 android:textColor="@android:color/white" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/cancelButton"
-                android:layout_width="match_parent"
+                android:id="@+id/payRemainingButton"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                app:cornerRadius="10dp"
+                android:backgroundTint="#4CAF50"
+                android:text="Pay&#10;Remaining"
+                android:textColor="@android:color/white"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cancelButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 app:cornerRadius="10dp"
                 android:backgroundTint="#AA0000"
                 android:text="Cancel"
                 android:textColor="@android:color/white" />
-        </LinearLayout>
 
+        </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

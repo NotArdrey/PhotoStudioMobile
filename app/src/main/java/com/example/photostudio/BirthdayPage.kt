@@ -7,57 +7,48 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 
 class BirthdayPage : AppCompatActivity() {
-
+     lateinit var backButton: ImageView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_pre_birthday_page)
 
+        backButton = findViewById(R.id.backButton)
+        backButton.setOnClickListener {
+            val intent = Intent(this, BottomNavActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            intent.putExtra("destination", "booking")
+            startActivity(intent)
+            finish()
+        }
         val plusFirst: ImageView = findViewById(R.id.plusFirst)
         plusFirst.setOnClickListener {
-            val defaultPax = 1
-            val packagePrice = 800
-            val description = "1-2 Years Old Package"
-
-            val paymentIntent = Intent(this, PaymentPage::class.java).apply {
-                putExtra("defaultPax", defaultPax)
-                putExtra("description", description)
-                putExtra("packagePrice", packagePrice)
-            }
-            startActivity(paymentIntent)
+            val intent = Intent(this, PaymentPage::class.java)
+            intent.putExtra("defaultPax", 0)
+            intent.putExtra("packageType", "1-2 Years Old Package")
+            intent.putExtra("packagePrice", 800)
+            startActivity(intent)
         }
 
         val plusSecond: ImageView = findViewById(R.id.plusSecond)
         plusSecond.setOnClickListener {
-            val defaultPax = 1
-            val packagePrice = 1000
-            val description = "3-4 Years Old Package"
-
-            val paymentIntent = Intent(this, PaymentPage::class.java).apply {
-                putExtra("defaultPax", defaultPax)
-                putExtra("description", description)
-                putExtra("packagePrice", packagePrice)
-            }
-            startActivity(paymentIntent)
+            val intent = Intent(this, PaymentPage::class.java)
+            intent.putExtra("defaultPax", 0)
+            intent.putExtra("packageType", "3-4 Years Old Package")
+            intent.putExtra("packagePrice", 1000)
+            startActivity(intent)
         }
 
         val plusThird: ImageView = findViewById(R.id.plusThird)
         plusThird.setOnClickListener {
-            val defaultPax = 1
-            val packagePrice = 1500
-            val description = "5-9 Years Old Package"
-
-            val paymentIntent = Intent(this, PaymentPage::class.java).apply {
-                putExtra("defaultPax", defaultPax)
-                putExtra("description", description)
-                putExtra("packagePrice", packagePrice)
-            }
-            startActivity(paymentIntent)
-        }
-
-        findViewById<ImageView>(R.id.backButton).setOnClickListener {
-            val intent = Intent(this, LandingPage::class.java)
+            val intent = Intent(this, PaymentPage::class.java)
+            intent.putExtra("defaultPax", 0)
+            intent.putExtra("packageType", "5-9 Years Old Package")
+            intent.putExtra("packagePrice", 1500)
             startActivity(intent)
         }
+
+
+
     }
 }
