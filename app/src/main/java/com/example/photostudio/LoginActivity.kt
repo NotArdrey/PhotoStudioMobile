@@ -9,6 +9,7 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.security.MessageDigest
 import java.util.Date
@@ -19,8 +20,10 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var passwordInput: EditText
     private lateinit var loginButton: Button
     private lateinit var registerLink: TextView
+    private lateinit var forgotPasswordLink: TextView
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var firestore: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
 
     data class User(
         val uid: String = "",
@@ -38,7 +41,7 @@ class LoginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
 
         initializeViews()
-        initializeFirestore()
+        initializeFirebase()
         handleDeepLink(intent?.data)
         setupClickListeners()
     }
@@ -48,11 +51,13 @@ class LoginActivity : AppCompatActivity() {
         passwordInput = findViewById(R.id.passwordInput)
         loginButton = findViewById(R.id.loginButton)
         registerLink = findViewById(R.id.registerLink)
+        forgotPasswordLink = findViewById(R.id.forgotPassword) // Added forgot password textview
         sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE)
     }
 
-    private fun initializeFirestore() {
+    private fun initializeFirebase() {
         firestore = FirebaseFirestore.getInstance()
+        auth = FirebaseAuth.getInstance() // Initialize Firebase Authentication
     }
 
     private fun setupClickListeners() {
@@ -62,11 +67,13 @@ class LoginActivity : AppCompatActivity() {
         registerLink.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
+        forgotPasswordLink.setOnClickListener {
+            handleForgotPassword()
+        }
     }
 
     private fun handleDeepLink(data: Uri?) {
         data?.let { uri ->
-            // Expecting a link like: https://www.yourapp.com/verify?uid=USER_ID
             val uid = uri.getQueryParameter("uid")
             if (uid != null) {
                 verifyEmail(uid)
@@ -101,7 +108,6 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        // Hardcoded testing credentials: bypass Firestore if email and password are test values
         if (email == "test@example.com" && password == "test") {
             val dummyUser = User(
                 uid = "test_uid",
@@ -152,6 +158,23 @@ class LoginActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 showError("Error: ${e.message}")
                 showLoading(false)
+            }
+    }
+
+    private fun handleForgotPassword() {
+        val email = emailInput.text.toString().trim()
+
+        if (email.isEmpty()) {
+            emailInput.error = "Enter your email to reset password"
+            return
+        }
+
+        auth.sendPasswordResetEmail(email)
+            .addOnSuccessListener {
+                showToast("Password reset email sent. Check your inbox.")
+            }
+            .addOnFailureListener { e ->
+                showError("Failed to send reset email: ${e.message}")
             }
     }
 
