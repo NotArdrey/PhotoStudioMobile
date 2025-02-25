@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.View
+
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -16,6 +17,7 @@ import androidx.lifecycle.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.photostudio.R
+
 import com.google.firebase.firestore.FirebaseFirestore
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -30,6 +32,7 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var bookingAdapter: BookingAdapter
+
     private val db = FirebaseFirestore.getInstance()
     private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
 
@@ -45,8 +48,23 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Original layout remains
+
+    private lateinit var bottomNav: BottomNavigationView
+    private val db = FirebaseFirestore.getInstance()
+    private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_active_booking_page)
 
+        // ✅ Back Button Fix
+        val backButton: ImageView = findViewById(R.id.backButton)
+        backButton.setOnClickListener {
+            onBackPressedDispatcher.onBackPressed() // Use the correct method for back navigation
+        }
+
+        // ✅ RecyclerView Setup
         recyclerView = findViewById(R.id.recyclerViewBookings)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
@@ -129,11 +147,31 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
 
         // Original fetchBookings() call
         fetchBookings()
+
+        // ✅ Bottom Navigation Setup
+        bottomNav = findViewById(R.id.bottomNavigationView)
+
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> replaceFragment(LandingFragment())
+                R.id.nav_booking -> replaceFragment(BookingFragment())
+                R.id.nav_profile -> replaceFragment(AccountFragment())
+            }
+            true
+        }
+    }
+
+    private fun replaceFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, fragment)
+            .commit()
     }
 
     private fun fetchBookings() {
         db.collection("payments")
+
             .whereEqualTo("complete", "no")
+
             .get()
             .addOnSuccessListener { documents ->
                 val bookingsList = mutableListOf<Booking>()
@@ -179,14 +217,16 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
                     )
                 }
 
-                bookingsList.sortBy {
+                // ✅ Sort by appointment date
+                bookingsList.sortBy { booking ->
                     try {
-                        dateFormat.parse(it.appointmentDate)
+                        dateFormat.parse(booking.appointmentDate)
                     } catch (e: Exception) {
                         null
                     }
                 }
 
+                // ✅ Update RecyclerView
                 bookingAdapter.updateBookings(bookingsList)
             }
             .addOnFailureListener { exception ->
@@ -194,7 +234,6 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
             }
     }
 
-    // Existing "Rebook" click handler remains unchanged except for passing booking id
     override fun onRebookClicked(booking: Booking) {
         val intent = Intent(this, RebookPage::class.java).apply {
             putExtra("id", booking.id)  // Passing the booking ID
@@ -214,13 +253,15 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
         startActivity(intent)
     }
 
-    // Existing "Cancel" click handler remains unchanged
+
     override fun onCancelClicked(booking: Booking) {
         db.collection("payments").document(booking.id)
             .update("complete", "yes")
             .addOnSuccessListener {
                 Toast.makeText(this, "Booking Cancelled", Toast.LENGTH_SHORT).show()
+
                 fetchBookings()
+
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Failed to cancel booking", Toast.LENGTH_SHORT).show()

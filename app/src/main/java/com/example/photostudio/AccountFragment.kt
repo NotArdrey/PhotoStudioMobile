@@ -67,7 +67,7 @@ class AccountFragment : Fragment() {
 
         val sharedPref = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE)
         val uid = sharedPref.getString("uid", null)
-        val email = sharedPref.getString("userEmail", null)
+        val email = sharedPref.getString("email", null)
 
         if (uid == null || email.isNullOrEmpty()) {
             showToast("Please log in to access your account")

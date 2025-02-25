@@ -75,9 +75,13 @@
                 android:layout_width="26dp"
                 android:layout_height="26dp"
                 android:src="@drawable/back_arrow"
+                android:layout_marginEnd="16dp"
                 android:layout_marginBottom="20dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@id/packageImage"
+                app:layout_constraintBottom_toBottomOf="@id/headerLayout"
                 android:clickable="true"
-                android:focusable="true" />
+                android:focusable="true"/>
 
             <!-- Package Image -->
             <ImageView
