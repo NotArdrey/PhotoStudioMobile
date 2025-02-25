@@ -30,17 +30,16 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var bookingAdapter: BookingAdapter
-    // Existing code remains unchanged
     private val db = FirebaseFirestore.getInstance()
     private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
 
-    // Added: WebView for payment redirection (used only for Paymongo payment)
+    // WebView for payment redirection (used only for Paymongo payment)
     private lateinit var paymentWebView: WebView
 
-    // Added: PaymentViewModel to manage payment API calls
+    // PaymentViewModel to manage payment API calls
     private lateinit var viewModel: PaymentViewModel
 
-    // Added: To store the booking for which the remaining payment is being processed.
+    // To store the booking for which the remaining payment is being processed.
     private var currentBookingForPayment: Booking? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -195,9 +194,10 @@ class ActiveBookingPage : AppCompatActivity(), BookingAdapter.OnBookingClickList
             }
     }
 
-    // Existing "Rebook" click handler remains unchanged
+    // Existing "Rebook" click handler remains unchanged except for passing booking id
     override fun onRebookClicked(booking: Booking) {
         val intent = Intent(this, RebookPage::class.java).apply {
+            putExtra("id", booking.id)  // Passing the booking ID
             putExtra("appointmentDate", booking.appointmentDate)
             putExtra("appointmentTime", booking.appointmentTime)
             putExtra("defaultBackdrop", booking.defaultBackdrop)

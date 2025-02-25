@@ -1,5 +1,6 @@
 package com.example.photostudio
 
+import android.app.DatePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -29,9 +30,14 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import android.text.InputType
 
 class RebookPage : AppCompatActivity() {
 
+    // UI components
     private lateinit var dateEditText: TextInputEditText
     private lateinit var timeDropdown: MaterialAutoCompleteTextView
     private lateinit var defaultBackdropSpinner: MaterialAutoCompleteTextView
@@ -40,13 +46,13 @@ class RebookPage : AppCompatActivity() {
     private lateinit var softCopyQtyEditText: EditText
     private lateinit var rebookPaymentButton: MaterialButton
     private lateinit var paymentWebView: WebView
-
-    // Added: Package selection spinner for changing the package during rebooking
     private lateinit var packageSpinner: MaterialAutoCompleteTextView
 
+    // Firestore and ViewModel
     private lateinit var firestore: FirebaseFirestore
     private lateinit var viewModel: PaymentViewModel
 
+    // Booking and payment related properties
     private var bookingId: String? = null
     private var appointmentDate: String? = null
     private var appointmentTime: String? = null
@@ -54,13 +60,14 @@ class RebookPage : AppCompatActivity() {
     private var selectedExtraBackdrop: String? = null
     private var extraPersonQty: Int = 0
     private var softCopyQty: Int = 0
-
-    // Changed: packageType can now be updated by user selection
     private var packageType: String? = null
     private var paymentType: String? = null
     private var paymongoName: String? = null
     private var totalAmount: Int = 0
     private var uid: String? = null
+
+    // Hold the selected time (from the time dropdown)
+    private var selectedTime: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +75,7 @@ class RebookPage : AppCompatActivity() {
 
         firestore = FirebaseFirestore.getInstance()
 
+        // Initialize UI components
         dateEditText = findViewById(R.id.dateEditText)
         timeDropdown = findViewById(R.id.timeDropdown)
         defaultBackdropSpinner = findViewById(R.id.defaultBackdropSpinner)
@@ -76,14 +84,13 @@ class RebookPage : AppCompatActivity() {
         softCopyQtyEditText = findViewById(R.id.softCopyQty)
         rebookPaymentButton = findViewById(R.id.rebook_payment_button)
         paymentWebView = findViewById(R.id.paymentWebView)
-        // Initialize the new package spinner
         packageSpinner = findViewById(R.id.packageSpinner)
 
+        // Retrieve extras from the intent.
         bookingId = intent.getStringExtra("id")
         appointmentDate = intent.getStringExtra("appointmentDate")
         appointmentTime = intent.getStringExtra("appointmentTime")
         defaultBackdrop = intent.getStringExtra("defaultBackdrop")
-        // Retrieve packageType from intent extras (if available)
         packageType = intent.getStringExtra("packageType")
         extraPersonQty = intent.getIntExtra("extraPersonQty", 0)
         paymentType = intent.getStringExtra("paymentType")
@@ -93,6 +100,7 @@ class RebookPage : AppCompatActivity() {
         totalAmount = intent.getIntExtra("totalAmount", 0)
         uid = intent.getStringExtra("uid")
 
+        // Set initial values if provided.
         dateEditText.setText(appointmentDate ?: "")
         timeDropdown.setText(appointmentTime ?: "")
         defaultBackdropSpinner.setText(defaultBackdrop ?: "")
@@ -100,63 +108,137 @@ class RebookPage : AppCompatActivity() {
         extraPersonQtyEditText.setText(extraPersonQty.toString())
         softCopyQtyEditText.setText(softCopyQty.toString())
 
-        // Setup package spinner with sample package options
-        val packageOptions = listOf("Basic", "Premium", "Deluxe")
+        // Setup package spinner with available options.
+        val packageOptions = listOf(
+            "Solo Package",
+            "Pair Package",
+            "Group Package",
+            "1-2 Years Old Package",
+            "3-4 Years Old Package",
+            "5-9 Years Old Package"
+        )
         val packageAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, packageOptions)
         packageSpinner.setAdapter(packageAdapter)
-        // Set the current selection if packageType was provided via intent
+        packageSpinner.setOnClickListener {
+            packageSpinner.showDropDown()
+        }
         packageType?.let {
             val index = packageOptions.indexOf(it)
             if (index >= 0) {
                 packageSpinner.setText(it, false)
             }
         }
-        // Update packageType when user selects a new package
-        packageSpinner.setOnItemClickListener { parent, view, position, id ->
+        packageSpinner.setOnItemClickListener { parent, _, position, _ ->
             packageType = parent.getItemAtPosition(position).toString()
+            updateSoftCopyVisibility()
         }
+        // Also add a text change listener to update the visibility even if the text is set programmatically.
+        packageSpinner.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                updateSoftCopyVisibility()
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
+        })
+        // Update immediately if the initial package is Group Package.
+        updateSoftCopyVisibility()
 
+        // --- New Date & Time Selection Logic ---
+        // Disable time dropdown until a date is selected.
+        timeDropdown.inputType = InputType.TYPE_NULL
         timeDropdown.isEnabled = false
 
-        // Listen for changes in the date field to enable time selection and filter out booked times.
-        dateEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                val selectedDate = s.toString()
-                if (selectedDate.isNotEmpty()) {
-                    // Reset the time field whenever the date changes.
-                    timeDropdown.setText("")
-                    timeDropdown.isEnabled = true
-
-                    // Query Firestore for any bookings with this date.
-                    firestore.collection("bookings")
-                        .whereEqualTo("appointmentDate", selectedDate)
-                        .get()
-                        .addOnSuccessListener { querySnapshot ->
-                            // Collect times that are already booked.
-                            val bookedTimes = querySnapshot.documents.mapNotNull { it.getString("appointmentTime") }
-                            // Update the timeDropdown adapter to remove booked times.
-                            val currentAdapter = timeDropdown.adapter as? ArrayAdapter<String>
-                            currentAdapter?.let {
-                                val availableTimes = (0 until it.count)
-                                    .map { index -> it.getItem(index).toString() }
-                                    .filter { time -> !bookedTimes.contains(time) }
-                                val newAdapter = ArrayAdapter(this@RebookPage,
-                                    android.R.layout.simple_dropdown_item_1line, availableTimes)
-                                timeDropdown.setAdapter(newAdapter)
-                            }
-                        }
-                } else {
-                    timeDropdown.isEnabled = false
-                    timeDropdown.setText("")
+        // Helper function to generate time slots (9:00 AM to 6:00 PM in 30-min intervals).
+        fun generateTimeSlots(startHour: Int, endHour: Int, intervalMinutes: Int): List<String> {
+            val slots = mutableListOf<String>()
+            var hour = startHour
+            var minute = 0
+            while (hour < endHour || (hour == endHour && minute == 0)) {
+                val hour12 = if (hour % 12 == 0) 12 else hour % 12
+                val amPm = if (hour < 12) "AM" else "PM"
+                slots.add(String.format("%02d:%02d %s", hour12, minute, amPm))
+                minute += intervalMinutes
+                if (minute >= 60) {
+                    minute %= 60
+                    hour++
                 }
             }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-        // --- End date and time selection changes ---
+            return slots
+        }
+        val allFixedTimeSlots = generateTimeSlots(9, 18, 30)
+        val timeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, allFixedTimeSlots.toMutableList())
+        timeDropdown.setAdapter(timeAdapter)
+
+        // When user clicks the time field, show dropdown if enabled.
+        timeDropdown.setOnClickListener {
+            if (timeDropdown.isEnabled) {
+                timeDropdown.showDropDown()
+            } else {
+                Toast.makeText(this, "Please select a date first.", Toast.LENGTH_SHORT).show()
+            }
+        }
+        // Capture the selected time.
+        timeDropdown.setOnItemClickListener { parent, _, position, _ ->
+            selectedTime = (parent.getItemAtPosition(position) as String)
+        }
+
+        // DatePickerDialog for appointment date selection.
+        dateEditText.setOnClickListener {
+            val tomorrowCalendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+            val dpd = DatePickerDialog(
+                this,
+                { _, year, month, dayOfMonth ->
+                    val selectedCal = Calendar.getInstance().apply { set(year, month, dayOfMonth) }
+                    val dateFormatter = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+                    val dateString = dateFormatter.format(selectedCal.time)
+                    dateEditText.setText(dateString)
+
+                    // Reset any previously selected time.
+                    selectedTime = null
+                    timeDropdown.setText("")
+
+                    // Query Firestore to get already booked times for the selected date.
+                    firestore.collection("payments")
+                        .whereEqualTo("appointmentDate", dateString)
+                        .addSnapshotListener { querySnapshot, e ->
+                            if (e != null) {
+                                Log.e("RebookPage", "Listen failed: ${e.message}")
+                                return@addSnapshotListener
+                            }
+                            val bookedTimes = mutableSetOf<String>()
+                            querySnapshot?.documents?.forEach { document ->
+                                document.getString("appointmentTime")?.let { bookedTimes.add(it) }
+                            }
+                            val availableTimes = allFixedTimeSlots.filter { it !in bookedTimes }
+                            if (availableTimes.isEmpty()) {
+                                Toast.makeText(
+                                    this,
+                                    "No available time slots for this date. Please choose another date.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                dateEditText.setText("")
+                                timeDropdown.isEnabled = false
+                                (timeDropdown.adapter as ArrayAdapter<String>).clear()
+                            } else {
+                                (timeDropdown.adapter as ArrayAdapter<String>).clear()
+                                (timeDropdown.adapter as ArrayAdapter<String>).addAll(availableTimes)
+                                (timeDropdown.adapter as ArrayAdapter<String>).notifyDataSetChanged()
+                                timeDropdown.isEnabled = true
+                            }
+                        }
+                },
+                Calendar.getInstance().get(Calendar.YEAR),
+                Calendar.getInstance().get(Calendar.MONTH),
+                Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+            )
+            // Set minimum date to tomorrow.
+            dpd.datePicker.minDate = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+            dpd.show()
+        }
+        // --- End Date & Time Selection Logic ---
 
         // --- Prevent selecting the same backdrop in both spinners ---
-        defaultBackdropSpinner.setOnItemClickListener { parent, view, position, id ->
+        defaultBackdropSpinner.setOnItemClickListener { parent, _, position, _ ->
             val selectedBackdrop = parent.getItemAtPosition(position).toString()
             val optionalAdapter = optionalBackdropSpinner.adapter as? ArrayAdapter<String>
             optionalAdapter?.let {
@@ -166,8 +248,7 @@ class RebookPage : AppCompatActivity() {
                 optionalBackdropSpinner.setAdapter(newAdapter)
             }
         }
-
-        optionalBackdropSpinner.setOnItemClickListener { parent, view, position, id ->
+        optionalBackdropSpinner.setOnItemClickListener { parent, _, position, _ ->
             val selectedExtra = parent.getItemAtPosition(position).toString()
             val defaultAdapter = defaultBackdropSpinner.adapter as? ArrayAdapter<String>
             defaultAdapter?.let {
@@ -179,11 +260,7 @@ class RebookPage : AppCompatActivity() {
         }
         // --- End backdrop selection changes ---
 
-        // Initialize the PaymentViewModel
-        viewModel = ViewModelProvider(this, PaymentViewModelFactory())
-            .get(PaymentViewModel::class.java)
-
-        // Configure the payment WebView to handle redirection URLs (payment success/failure)
+        // Configure payment WebView.
         paymentWebView.settings.javaScriptEnabled = true
         paymentWebView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
@@ -217,7 +294,10 @@ class RebookPage : AppCompatActivity() {
             }
         }
 
-        // Observe changes to the PaymentViewModel LiveData objects
+        // Initialize PaymentViewModel.
+        viewModel = ViewModelProvider(this, PaymentViewModelFactory())
+            .get(PaymentViewModel::class.java)
+
         viewModel.redirectUrl.observe(this) { url ->
             if (!url.isNullOrEmpty()) {
                 paymentWebView.visibility = View.VISIBLE
@@ -233,14 +313,13 @@ class RebookPage : AppCompatActivity() {
                 val status = attributes?.optString("status")?.trim()?.toLowerCase()
                 if (status == "paid" || status == "succeeded") {
                     Toast.makeText(this, "Payment completed successfully.", Toast.LENGTH_LONG).show()
-                    // Get additional details from the API response
+                    // Retrieve updated payment details.
                     val paymongoNameFromResponse = attributes?.optJSONObject("billing")?.optString("name") ?: ""
-                    // Build updated payment data using the booking details from intent extras
                     val updatedPaymentData = mapOf(
-                        "appointmentDate" to (appointmentDate ?: ""),
-                        "appointmentTime" to (appointmentTime ?: ""),
+                        "appointmentDate" to dateEditText.text.toString(),
+                        "appointmentTime" to (selectedTime ?: appointmentTime ?: ""),
                         "defaultBackdrop" to (defaultBackdrop ?: ""),
-                        "packageType" to (packageType ?: ""),  // Updated packageType field
+                        "packageType" to (packageType ?: ""),
                         "extraPersonQty" to extraPersonQty,
                         "paymentType" to (paymentType ?: ""),
                         "paymongoName" to paymongoNameFromResponse,
@@ -251,14 +330,11 @@ class RebookPage : AppCompatActivity() {
                         "archive" to "no",
                         "complete" to "no"
                     )
-                    // Update the existing payment document identified by bookingId
                     if (bookingId != null) {
                         firestore.collection("payments")
                             .document(bookingId!!)
                             .update(updatedPaymentData)
-                            .addOnSuccessListener {
-                                finish()
-                            }
+                            .addOnSuccessListener { finish() }
                             .addOnFailureListener { e ->
                                 Toast.makeText(this, "Error updating payment data", Toast.LENGTH_SHORT).show()
                             }
@@ -271,10 +347,20 @@ class RebookPage : AppCompatActivity() {
             } ?: Log.e("RebookPage", "Received null payment details JSON.")
         }
 
-        // Set up the rebook payment button click to initiate the payment process.
-        // Pass the (possibly updated) packageType to createPaymentLink.
+        // Initiate payment when rebook payment button is clicked.
         rebookPaymentButton.setOnClickListener {
             viewModel.createPaymentLink(totalAmount, packageType ?: "Rebook Payment")
+        }
+    }
+
+    // Helper function to update soft copy visibility based on packageType.
+    private fun updateSoftCopyVisibility() {
+        if (packageSpinner.text.toString().equals("Group Package", ignoreCase = true)) {
+            extraPersonQtyEditText.visibility = View.VISIBLE
+            softCopyQtyEditText.visibility = View.GONE
+        } else {
+            extraPersonQtyEditText.visibility = View.VISIBLE
+            softCopyQtyEditText.visibility = View.VISIBLE
         }
     }
 
@@ -315,7 +401,7 @@ class RebookPage : AppCompatActivity() {
         }
     }
 
-    // PaymentViewModel and its Factory remain largely unchanged.
+    // ------------------- PaymentViewModel and Factory -------------------
     class PaymentViewModelFactory : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(PaymentViewModel::class.java)) {
@@ -345,7 +431,6 @@ class RebookPage : AppCompatActivity() {
                     put("attributes", JSONObject().apply {
                         put("amount", convertedAmount)
                         put("currency", "PHP")
-                        // Passing the (possibly updated) packageType value as the description.
                         put("description", packageType)
                         put("payment_method_types", JSONArray().apply {
                             put("gcash")
@@ -370,7 +455,6 @@ class RebookPage : AppCompatActivity() {
                 override fun onFailure(call: Call, e: IOException) {
                     Log.e("PaymentViewModel", "Network request failed: ${e.localizedMessage}", e)
                 }
-
                 override fun onResponse(call: Call, response: Response) {
                     val responseBody = response.body?.string() ?: return
                     if (response.isSuccessful) {
@@ -404,7 +488,6 @@ class RebookPage : AppCompatActivity() {
                 override fun onFailure(call: Call, e: IOException) {
                     Log.e("PaymentViewModel", "Network request failed: ${e.localizedMessage}", e)
                 }
-
                 override fun onResponse(call: Call, response: Response) {
                     val responseBody = response.body?.string() ?: ""
                     if (response.isSuccessful) {
@@ -432,7 +515,6 @@ class RebookPage : AppCompatActivity() {
                 override fun onFailure(call: Call, e: IOException) {
                     Log.e("PaymentViewModel", "Failed to retrieve link details: ${e.localizedMessage}")
                 }
-
                 override fun onResponse(call: Call, response: Response) {
                     val responseBody = response.body?.string()
                     if (response.isSuccessful && responseBody != null) {
@@ -462,7 +544,6 @@ class RebookPage : AppCompatActivity() {
                 override fun onFailure(call: Call, e: IOException) {
                     Log.e("PaymentViewModel", "Failed to retrieve payments: ${e.localizedMessage}")
                 }
-
                 override fun onResponse(call: Call, response: Response) {
                     val responseBody = response.body?.string()
                     if (response.isSuccessful && responseBody != null) {

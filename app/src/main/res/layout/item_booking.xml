@@ -116,7 +116,7 @@
                 android:paddingEnd="16dp"
                 app:cornerRadius="10dp"
                 android:backgroundTint="#4CAF50"
-                android:text="Pay&#10;Remaining"
+                android:text="Pay"
                 android:textColor="@android:color/white"
                 android:visibility="gone" />
 
